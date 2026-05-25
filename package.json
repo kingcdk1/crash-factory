@@ -1,0 +1,9 @@
+{
+  "name": "crash-factory-pay",
+  "version": "1.0.0",
+  "description": "The Crash Factory parts checkout payment backend - Valor PayTech",
+  "private": true,
+  "engines": {
+    "node": ">=18.x"
+  }
+}
