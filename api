@@ -1,0 +1,199 @@
+// /api/charge.js
+// Vercel serverless function for The Crash Factory parts checkout
+// Receives order from parts.html, charges card via Valor PayTech, emails confirmation
+//
+// REQUIRED ENVIRONMENT VARIABLES (set in Vercel project settings):
+//   VALOR_API_KEY        - Your Valor PayTech API key
+//   VALOR_MERCHANT_ID    - Your Valor merchant ID (sometimes called EPI)
+//   VALOR_API_URL        - Valor API endpoint (production or sandbox)
+//   ORDER_EMAIL_TO       - admin@thecrashfactory.com (where order notifications go)
+//   RESEND_API_KEY       - (optional) Resend.com API key for email notifications
+//
+// ALLOWED ORIGIN: thecrashfactory.com
+
+export default async function handler(req, res) {
+  // CORS - allow your site
+  const allowedOrigins = [
+    'https://thecrashfactory.com',
+    'https://www.thecrashfactory.com',
+    'https://kingcdk1.github.io'
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+
+  try {
+    const order = req.body;
+
+    // Basic validation
+    if (!order || !order.payment || !order.customer || !order.items || !order.total) {
+      return res.status(400).json({ success: false, error: 'Invalid order payload' });
+    }
+
+    const { payment, customer, billing, items, subtotal, tax, taxExempt, total, orderId } = order;
+
+    // ============================================
+    // STEP 1: Charge the card via Valor PayTech
+    // ============================================
+    const valorApiKey = process.env.VALOR_API_KEY;
+    const valorMerchantId = process.env.VALOR_MERCHANT_ID;
+    const valorApiUrl = process.env.VALOR_API_URL || 'https://securelink.valorpaytech.com/api/v1/charge';
+
+    if (!valorApiKey || !valorMerchantId) {
+      return res.status(500).json({
+        success: false,
+        error: 'Payment processor not configured. Please call 214-509-6194 to complete your order.'
+      });
+    }
+
+    // Valor charge request payload
+    // NOTE: Adjust the exact field names to match Valor's API spec from their developer portal
+    const valorPayload = {
+      merchantId: valorMerchantId,
+      amount: parseFloat(total),
+      currency: 'USD',
+      orderId: orderId,
+      card: {
+        number: payment.cardNumber,
+        expMonth: payment.expMonth,
+        expYear: payment.expYear,
+        cvv: payment.cvv
+      },
+      billing: {
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+        phone: customer.phone,
+        address: billing.address,
+        city: billing.city,
+        state: billing.state,
+        zip: billing.zip
+      },
+      description: `Crash Factory Parts Order ${orderId}`
+    };
+
+    const valorRes = await fetch(valorApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${valorApiKey}`
+      },
+      body: JSON.stringify(valorPayload)
+    });
+
+    const valorData = await valorRes.json();
+
+    if (!valorRes.ok || valorData.status !== 'approved') {
+      // Log the failure detail for debugging
+      console.error('Valor charge failed:', valorData);
+      return res.status(402).json({
+        success: false,
+        error: valorData.message || 'Card declined. Please try another card or call 214-509-6194.'
+      });
+    }
+
+    const transactionId = valorData.transactionId || valorData.id || 'N/A';
+
+    // ============================================
+    // STEP 2: Email order to the shop
+    // ============================================
+    const orderEmailTo = process.env.ORDER_EMAIL_TO || 'admin@thecrashfactory.com';
+    const resendKey = process.env.RESEND_API_KEY;
+
+    const itemsText = items.map(i => `  ${i.name} (${i.pn || 'no PN'}) x${i.qty} @ $${parseFloat(i.price).toFixed(2)} = $${(i.qty * parseFloat(i.price)).toFixed(2)}`).join('\n');
+    const exemptText = taxExempt
+      ? `TAX EXEMPT: ${taxExempt.code} (${taxExempt.label || 'no label'})`
+      : `Tax (8.25%): $${parseFloat(tax).toFixed(2)}`;
+
+    const emailBody = `
+NEW PARTS ORDER - The Crash Factory
+====================================
+
+Order ID: ${orderId}
+Transaction ID: ${transactionId}
+Date: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })}
+
+CUSTOMER
+--------
+${customer.firstName} ${customer.lastName}
+Email: ${customer.email}
+Phone: ${customer.phone}
+
+BILLING ADDRESS
+---------------
+${billing.address}
+${billing.city}, ${billing.state} ${billing.zip}
+
+ITEMS
+-----
+${itemsText}
+
+TOTALS
+------
+Subtotal: $${parseFloat(subtotal).toFixed(2)}
+${exemptText}
+TOTAL CHARGED: $${parseFloat(total).toFixed(2)}
+
+FULFILLMENT
+-----------
+LOCAL PICKUP at 6211 S R L Thornton Fwy, Dallas TX 75232
+Contact customer when parts are ready.
+
+PAYMENT STATUS: APPROVED
+====================================
+`;
+
+    // Send email via Resend (if configured)
+    if (resendKey) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${resendKey}`
+          },
+          body: JSON.stringify({
+            from: 'orders@thecrashfactory.com',
+            to: orderEmailTo,
+            subject: `New Parts Order ${orderId} - $${parseFloat(total).toFixed(2)}`,
+            text: emailBody
+          })
+        });
+      } catch (emailErr) {
+        // Don't fail the payment if the email fails - log it
+        console.error('Email send failed (payment still succeeded):', emailErr);
+      }
+    } else {
+      // No email service configured - log to Vercel function logs
+      console.log('ORDER NOTIFICATION (no email service configured):\n' + emailBody);
+    }
+
+    // ============================================
+    // STEP 3: Return success to the frontend
+    // ============================================
+    return res.status(200).json({
+      success: true,
+      orderId: orderId,
+      transactionId: transactionId,
+      message: 'Order placed successfully. We will contact you when parts are ready for pickup.'
+    });
+
+  } catch (err) {
+    console.error('Charge handler error:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Server error. Please call 214-509-6194 to complete your order.'
+    });
+  }
+}
