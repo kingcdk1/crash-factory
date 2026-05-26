@@ -627,6 +627,14 @@ function renderProducts(){
   // Hide placeholders for customers (option 2c). Admins still see them.
   if(!isAdmin){
     parts = parts.filter(p=>!isPlaceholder(p));
+  } else {
+    // Admin view: sort so real parts appear ABOVE placeholder slots
+    // Preserves the relative order within each group
+    parts = parts.slice().sort((a,b)=>{
+      const aPh = isPlaceholder(a) ? 1 : 0;
+      const bPh = isPlaceholder(b) ? 1 : 0;
+      return aPh - bPh;
+    });
   }
   
   // Apply category filter
@@ -673,8 +681,12 @@ function movePart(id, direction){
   if(idx===-1) return;
   const part = parts[idx];
   
-  // Find siblings in same group (featured or not)
-  const sameGroup = parts.filter(p => !!p.featured === !!part.featured);
+  // Find siblings in same group: same featured status AND same placeholder status
+  // This keeps reordering clean (real parts only move among real parts, placeholders among placeholders)
+  const sameGroup = parts.filter(p =>
+    !!p.featured === !!part.featured &&
+    isPlaceholder(p) === isPlaceholder(part)
+  );
   const groupIdx = sameGroup.findIndex(p=>p.id===id);
   const newGroupIdx = groupIdx + direction;
   
