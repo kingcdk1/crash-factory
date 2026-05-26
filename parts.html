@@ -222,6 +222,28 @@ nav a:hover,nav a.active{color:var(--red)}
 .admin-gear:hover{opacity:1;border-color:var(--red)}
 .admin-gear .material-symbols-outlined{font-size:22px;color:var(--gray)}
 
+/* FEATURED SECTION */
+.featured-section{padding:32px 0 16px;background:linear-gradient(180deg,rgba(245,166,35,.04) 0%,rgba(245,166,35,0) 100%);border-bottom:1px solid var(--dark3)}
+.featured-header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.featured-header h2{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--gold)}
+.featured-card{border:1px solid rgba(245,166,35,.3)!important;box-shadow:0 0 0 1px rgba(245,166,35,.15) inset}
+.featured-card:hover{border-color:rgba(245,166,35,.6)!important}
+.featured-ribbon{position:absolute;top:12px;left:12px;background:var(--gold);color:#000;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:3px;z-index:3;display:flex;align-items:center;gap:4px}
+
+/* REORDER BUTTONS */
+.product-admin-btns .reorder-btn{background:rgba(0,0,0,.7);color:#fff;width:32px;height:32px;border-radius:4px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.product-admin-btns .reorder-btn:hover:not(:disabled){background:var(--red)}
+.product-admin-btns .reorder-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* FEATURED TOGGLE in edit modal */
+.featured-toggle{cursor:pointer;display:block}
+.featured-toggle input[type=checkbox]{position:absolute;opacity:0;pointer-events:none}
+.featured-toggle-box{display:flex;align-items:center;gap:12px;background:var(--dark2);border:2px solid var(--dark3);border-radius:6px;padding:14px;transition:all .2s}
+.featured-toggle-box .material-symbols-outlined{color:var(--gray);transition:color .2s}
+.featured-toggle-box small{color:var(--gray);font-size:12px;font-weight:400}
+.featured-toggle input[type=checkbox]:checked + .featured-toggle-box{border-color:var(--gold);background:rgba(245,166,35,.06)}
+.featured-toggle input[type=checkbox]:checked + .featured-toggle-box .material-symbols-outlined{color:var(--gold)}
+
 /* FOOTER */
 footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 20px}
 .fgrid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:36px}
@@ -295,6 +317,15 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
     <button class="admin-btn-outline" onclick="logoutAdmin()"><span class="material-symbols-outlined" style="font-size:18px">logout</span> Log Out</button>
   </div>
 </div></div>
+
+<!-- FEATURED SECTION (only shows if there are featured parts) -->
+<section id="featuredSection" class="featured-section" style="display:none"><div class="ctn">
+  <div class="featured-header">
+    <span class="material-symbols-outlined icon-filled" style="color:var(--gold);font-size:24px">star</span>
+    <h2>Featured Parts</h2>
+  </div>
+  <div class="products-grid" id="featuredGrid"></div>
+</div></section>
 
 <!-- FILTER BAR -->
 <div class="filter-bar"><div class="ctn">
@@ -372,6 +403,15 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
         <div class="fg"><label>Badge</label>
           <select id="partBadge"><option value="">None</option><option value="Sale">Sale</option><option value="Hot">Hot</option><option value="New">New</option><option value="Sold">Sold</option></select>
         </div>
+      </div>
+      <div class="fg featured-toggle-row">
+        <label class="featured-toggle">
+          <input type="checkbox" id="partFeatured">
+          <span class="featured-toggle-box">
+            <span class="material-symbols-outlined icon-filled" style="font-size:20px">star</span>
+            <span><strong>Feature this part</strong><br><small>Shows in the Featured section at the top of the page</small></span>
+          </span>
+        </label>
       </div>
       <button class="submit-btn" onclick="savePart()"><span class="material-symbols-outlined">save</span> Save Part</button>
     </div>
@@ -483,15 +523,23 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
 const ADMIN_PASS = 'crashfactory2026';
 const TAX_RATE = 0.0825; // Texas 6.25% + Dallas 2% = 8.25%
 
-// Vercel backend endpoint (update after deploying the function)
-// Example: https://crash-factory-pay.vercel.app/api/charge
+// Vercel backend endpoint - live at https://crash-factory-pay.vercel.app
 const PAYMENT_ENDPOINT = 'https://crash-factory-pay.vercel.app/api/charge';
 
 // ============================================
 // PARTS DATA (localStorage)
 // ============================================
 function getParts(){ return JSON.parse(localStorage.getItem('cf_parts')||'[]'); }
-function saveParts(p){ localStorage.setItem('cf_parts',JSON.stringify(p)); }
+function saveParts(p){
+  try {
+    localStorage.setItem('cf_parts',JSON.stringify(p));
+    return true;
+  } catch(e) {
+    console.error('saveParts failed:', e);
+    alert('Could not save: browser storage is full. Try a smaller photo, or remove an existing part first.\n\nFor unlimited HD photos, we need to set up cloud storage (Vercel Blob) - ask Claude to wire it up.');
+    return false;
+  }
+}
 function nextId(){ return Date.now() + Math.floor(Math.random()*1000); }
 
 // Seed 20 placeholder slots if empty
@@ -534,47 +582,115 @@ let exemptApplied=null; // {code, label} when an exempt code is applied
 // ============================================
 const iconMap={body:'directions_car',mechanical:'settings',lighting:'lightbulb',interior:'airline_seat_recline_normal'};
 
+// Helper: check if a part is a placeholder (no real data filled in)
+function isPlaceholder(p){
+  return (p.salePrice<=0 && (!p.img) && (p.name||'').startsWith('Part Slot'));
+}
+
+// Render a single product card (used by both featured and all sections)
+function renderCard(p, idx, totalInSection){
+  const savings=(p.origPrice>0 && p.origPrice>p.salePrice)?Math.round(((p.origPrice-p.salePrice)/p.origPrice)*100):0;
+  const priceDisplay = p.salePrice>0 ? `$${p.salePrice.toFixed(2)}` : 'Call for Price';
+  return `<div class="product-card${p.featured?' featured-card':''}">
+    ${p.featured?'<div class="featured-ribbon"><span class="material-symbols-outlined icon-filled" style="font-size:14px">star</span> Featured</div>':''}
+    ${p.badge?`<div class="product-badge"${p.featured?' style="top:38px"':''}>${p.badge}</div>`:''}
+    <div class="product-admin-btns">
+      <button class="reorder-btn" onclick="movePart(${p.id},-1)" title="Move up" ${idx===0?'disabled':''}><span class="material-symbols-outlined" style="font-size:18px">arrow_upward</span></button>
+      <button class="reorder-btn" onclick="movePart(${p.id},1)" title="Move down" ${idx===totalInSection-1?'disabled':''}><span class="material-symbols-outlined" style="font-size:18px">arrow_downward</span></button>
+      <button class="edit-btn" onclick="editPart(${p.id})" title="Edit"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button>
+      <button class="del-btn" onclick="deletePart(${p.id})" title="Delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button>
+    </div>
+    <div class="product-img">
+      ${p.img?`<img src="${p.img}" alt="${p.name}" loading="lazy">`:`<span class="material-symbols-outlined">${iconMap[p.cat]||'inventory_2'}</span>`}
+    </div>
+    <div class="product-info">
+      <div class="product-cat">${p.cat}</div>
+      ${p.pn?`<div class="product-pn">#${p.pn}</div>`:''}
+      <h3>${p.name}</h3>
+      <p class="product-desc">${p.desc}</p>
+      <div class="product-pricing">
+        ${(p.origPrice>0 && p.origPrice>p.salePrice)?`<span class="price-original">$${p.origPrice.toFixed(2)}</span>`:''}
+        <span class="price-sale">${priceDisplay}</span>
+        ${savings>0?`<span class="price-save">Save ${savings}%</span>`:''}
+      </div>
+      <button class="add-to-cart" onclick="addToCart(${p.id},this)" ${p.salePrice<=0?'disabled style="opacity:.5;cursor:not-allowed"':''}>
+        <span class="material-symbols-outlined" style="font-size:18px">add_shopping_cart</span> 
+        ${p.salePrice<=0?'Call to Order':'Add to Cart'}
+      </button>
+    </div>
+  </div>`;
+}
+
 function renderProducts(){
   let parts=getParts();
+  
+  // Hide placeholders for customers (option 2c). Admins still see them.
+  if(!isAdmin){
+    parts = parts.filter(p=>!isPlaceholder(p));
+  }
+  
+  // Apply category filter
   if(currentFilter!=='all') parts=parts.filter(p=>p.cat===currentFilter);
+  // Apply search
   if(currentSearch) parts=parts.filter(p=>(p.name+' '+p.desc+' '+(p.pn||'')).toLowerCase().includes(currentSearch));
+  
   const grid=document.getElementById('productsGrid');
+  const featuredSection=document.getElementById('featuredSection');
+  const featuredGrid=document.getElementById('featuredGrid');
   const nr=document.getElementById('noResults');
-  if(!parts.length){grid.innerHTML='';nr.style.display='block';return;}
+  
+  if(!parts.length){
+    grid.innerHTML='';
+    if(featuredSection) featuredSection.style.display='none';
+    nr.style.display='block';
+    return;
+  }
   nr.style.display='none';
-  grid.innerHTML=parts.map(p=>{
-    const savings=(p.origPrice>0 && p.origPrice>p.salePrice)?Math.round(((p.origPrice-p.salePrice)/p.origPrice)*100):0;
-    const priceDisplay = p.salePrice>0 ? `$${p.salePrice.toFixed(2)}` : 'Call for Price';
-    return `<div class="product-card">
-      ${p.badge?`<div class="product-badge">${p.badge}</div>`:''}
-      <div class="product-admin-btns">
-        <button class="edit-btn" onclick="editPart(${p.id})" title="Edit"><span class="material-symbols-outlined" style="font-size:18px">edit</span></button>
-        <button class="del-btn" onclick="deletePart(${p.id})" title="Delete"><span class="material-symbols-outlined" style="font-size:18px">delete</span></button>
-      </div>
-      <div class="product-img">
-        ${p.img?`<img src="${p.img}" alt="${p.name}" loading="lazy">`:`<span class="material-symbols-outlined">${iconMap[p.cat]||'inventory_2'}</span>`}
-      </div>
-      <div class="product-info">
-        <div class="product-cat">${p.cat}</div>
-        ${p.pn?`<div class="product-pn">#${p.pn}</div>`:''}
-        <h3>${p.name}</h3>
-        <p class="product-desc">${p.desc}</p>
-        <div class="product-pricing">
-          ${(p.origPrice>0 && p.origPrice>p.salePrice)?`<span class="price-original">$${p.origPrice.toFixed(2)}</span>`:''}
-          <span class="price-sale">${priceDisplay}</span>
-          ${savings>0?`<span class="price-save">Save ${savings}%</span>`:''}
-        </div>
-        <button class="add-to-cart" onclick="addToCart(${p.id},this)" ${p.salePrice<=0?'disabled style="opacity:.5;cursor:not-allowed"':''}>
-          <span class="material-symbols-outlined" style="font-size:18px">add_shopping_cart</span> 
-          ${p.salePrice<=0?'Call to Order':'Add to Cart'}
-        </button>
-      </div>
-    </div>`;
-  }).join('');
+  
+  // Split into featured and regular
+  const featured = parts.filter(p=>p.featured);
+  const regular = parts.filter(p=>!p.featured);
+  
+  // Render featured section
+  if(featured.length>0){
+    if(featuredSection) featuredSection.style.display='block';
+    featuredGrid.innerHTML = featured.map((p,i)=>renderCard(p,i,featured.length)).join('');
+  } else {
+    if(featuredSection) featuredSection.style.display='none';
+  }
+  
+  // Render regular (all) section
+  grid.innerHTML = regular.map((p,i)=>renderCard(p,i,regular.length)).join('');
 }
 
 function filterParts(cat,btn){currentFilter=cat;document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderProducts();}
 function searchParts(q){currentSearch=q.toLowerCase();renderProducts();}
+
+// Move a part up or down within its section
+function movePart(id, direction){
+  let parts = getParts();
+  const idx = parts.findIndex(p=>p.id===id);
+  if(idx===-1) return;
+  const part = parts[idx];
+  
+  // Find siblings in same group (featured or not)
+  const sameGroup = parts.filter(p => !!p.featured === !!part.featured);
+  const groupIdx = sameGroup.findIndex(p=>p.id===id);
+  const newGroupIdx = groupIdx + direction;
+  
+  if(newGroupIdx < 0 || newGroupIdx >= sameGroup.length) return;
+  
+  // Get the ID of the part to swap with
+  const swapId = sameGroup[newGroupIdx].id;
+  const swapIdx = parts.findIndex(p=>p.id===swapId);
+  
+  // Swap them in the main array
+  [parts[idx], parts[swapIdx]] = [parts[swapIdx], parts[idx]];
+  
+  if(saveParts(parts)){
+    renderProducts();
+  }
+}
 
 // ============================================
 // ADMIN LOGIN
@@ -616,6 +732,7 @@ function openAddPart(){
   document.getElementById('partOrigPrice').value='';
   document.getElementById('partSalePrice').value='';
   document.getElementById('partBadge').value='';
+  document.getElementById('partFeatured').checked=false;
   document.getElementById('imgPreview').style.display='none';
   tempImg='';
   document.getElementById('partModal').classList.add('open');
@@ -632,6 +749,7 @@ function editPart(id){
   document.getElementById('partOrigPrice').value=p.origPrice||'';
   document.getElementById('partSalePrice').value=p.salePrice||'';
   document.getElementById('partBadge').value=p.badge||'';
+  document.getElementById('partFeatured').checked=!!p.featured;
   tempImg=p.img||'';
   const preview=document.getElementById('imgPreview');
   if(tempImg){preview.src=tempImg;preview.style.display='block';}else{preview.style.display='none';}
@@ -647,8 +765,47 @@ function closePartModal(){document.getElementById('partModal').classList.remove(
 
 function handleImgUpload(e){
   const file=e.target.files[0];if(!file)return;
+  
+  // Show a quick loading state on the preview
+  const preview=document.getElementById('imgPreview');
+  preview.style.display='block';
+  preview.src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="100%" height="100%" fill="%23161616"/><text x="50%" y="50%" text-anchor="middle" fill="%23999" font-family="sans-serif" font-size="13" dy=".3em">Compressing photo...</text></svg>';
+  
   const reader=new FileReader();
-  reader.onload=function(ev){tempImg=ev.target.result;const preview=document.getElementById('imgPreview');preview.src=tempImg;preview.style.display='block';};
+  reader.onload=function(ev){
+    // Load into image element to get dimensions
+    const img = new Image();
+    img.onload = function() {
+      // Resize to max 1200px on longest side, maintaining aspect ratio
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      // Compress to JPEG quality 0.85
+      tempImg = canvas.toDataURL('image/jpeg', 0.85);
+      preview.src = tempImg;
+      // Log the size savings to console for debugging
+      const origSize = Math.round(ev.target.result.length / 1024);
+      const newSize = Math.round(tempImg.length / 1024);
+      console.log('Image compressed: ' + origSize + 'KB → ' + newSize + 'KB');
+    };
+    img.onerror = function(){
+      alert('Could not read that image. Try a different photo.');
+      preview.style.display='none';
+    };
+    img.src = ev.target.result;
+  };
+  reader.onerror = function(){
+    alert('Could not read that file.');
+    preview.style.display='none';
+  };
   reader.readAsDataURL(file);
 }
 
@@ -661,15 +818,21 @@ function savePart(){
   const origPrice=parseFloat(document.getElementById('partOrigPrice').value)||0;
   const salePrice=parseFloat(document.getElementById('partSalePrice').value)||0;
   const badge=document.getElementById('partBadge').value;
+  const featured=document.getElementById('partFeatured').checked;
   if(!name){alert('Please enter a part name.');return;}
   let parts=getParts();
   if(editId){
     const idx=parts.findIndex(p=>p.id==editId);
-    if(idx>-1){parts[idx]={...parts[idx],name,pn,cat,desc,origPrice,salePrice,badge,img:tempImg};}
+    if(idx>-1){parts[idx]={...parts[idx],name,pn,cat,desc,origPrice,salePrice,badge,featured,img:tempImg};}
   }else{
-    parts.push({id:nextId(),name,pn,cat,desc,origPrice,salePrice,badge,img:tempImg});
+    // New parts go to the TOP, not the bottom
+    parts.unshift({id:nextId(),name,pn,cat,desc,origPrice,salePrice,badge,featured,img:tempImg});
   }
-  saveParts(parts);closePartModal();renderProducts();
+  if(saveParts(parts)){
+    closePartModal();
+    renderProducts();
+  }
+  // If save failed, leave modal open so user doesn't lose their work
 }
 
 // ============================================
