@@ -294,15 +294,56 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
 </div></footer>
 
 <script>
-function submitDriver(e){
+// Lead capture endpoint - stores the signup in our own Vercel Blob AND emails
+// it to the shop. No GoHighLevel, no Zapier.
+var LEAD_API = 'https://crash-factory-pay.vercel.app/api/lead';
+
+async function submitDriver(e){
   e.preventDefault();
   var name=document.getElementById('dName').value.trim();
   var phone=document.getElementById('dPhone').value.trim();
   var trucks=document.getElementById('dTrucks').value.trim();
   if(!name||!phone){alert('Please add your name and phone.');return false;}
-  var body='TOWZERO DRIVER SIGNUP\n\nName: '+name+'\nPhone: '+phone+'\nTrucks: '+(trucks||'not given')+'\n\nDriver wants to get set up to drop cars at The Crash Factory.';
-  window.location.href='mailto:admin@thecrashfactory.com?subject='+encodeURIComponent('TowZero Driver Signup - '+name)+'&body='+encodeURIComponent(body);
-  return false;
+
+  var btn=e.target.querySelector('.fsub');
+  var restore = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="material-symbols-outlined">hourglass_top</span> Sending...'; }
+
+  try{
+    var res = await fetch(LEAD_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        type:'towzero-driver',
+        name:name,
+        phone:phone,
+        message:'Tow driver wants to get set up to drop cars at The Crash Factory.',
+        fields:{ 'Trucks they run': trucks || 'not given' }
+      })
+    });
+    var data = await res.json();
+    // Only call it captured if it actually got stored or emailed. Until the
+    // Blob store + Resend key are connected, fall through to the email backup.
+    if(res.ok && data.success && (data.stored || data.emailed)){ showDriverThanks(name); return false; }
+    throw new Error(data.error||'not captured yet');
+  }catch(err){
+    // Never lose a lead: fall back to emailing it directly.
+    console.error('Lead submit failed, falling back to email:', err);
+    var body='TOWZERO DRIVER SIGNUP\n\nName: '+name+'\nPhone: '+phone+'\nTrucks: '+(trucks||'not given')+'\n\nDriver wants to get set up to drop cars at The Crash Factory.';
+    window.location.href='mailto:admin@thecrashfactory.com?subject='+encodeURIComponent('TowZero Driver Signup - '+name)+'&body='+encodeURIComponent(body);
+    if(btn){ btn.disabled=false; btn.innerHTML=restore; }
+    return false;
+  }
+}
+
+function showDriverThanks(name){
+  var box=document.querySelector('.dform');
+  if(!box) return;
+  box.innerHTML='<div style="text-align:center;padding:14px 0">'
+    +'<span class="material-symbols-outlined icon-filled" style="font-size:54px;color:var(--red)">check_circle</span>'
+    +'<h3 style="margin:14px 0 8px">You\'re On The List, '+name.split(' ')[0]+'</h3>'
+    +'<p class="fsubtxt" style="margin-bottom:0">We got your info and we\'ll call you to get you set up. Need us now? Call or text 214-509-6194.</p>'
+    +'</div>';
 }
 </script>
 </body>
