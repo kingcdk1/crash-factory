@@ -107,13 +107,30 @@ Copy `leads.html` from this repo. It logs in with the admin password, calls
 `GET /api/lead?password=...`, and renders the leads with type filters, search,
 and a CSV export. Change the `LEAD_API` constant at the top to your project URL.
 
-## 5. Vercel setup (one time per project)
+## 5. Optional fan-out (keep GoHighLevel / Google Sheets if you want)
+Your endpoint owns the data. GHL and Sheets are just downstream copies, off
+until you set their URLs. Add this block before the final `return` in the POST:
+```js
+const forwarded = { ghl:false, sheets:false };
+const ghlUrl = process.env.GHL_WEBHOOK_URL;
+if (ghlUrl) { try { forwarded.ghl = (await fetch(ghlUrl, { method:'POST',
+  headers:{'Content-Type':'application/json'}, body:JSON.stringify(rec) })).ok; } catch(e){} }
+const sheetsUrl = process.env.SHEETS_WEBHOOK_URL; // a Google Apps Script web app URL
+if (sheetsUrl) { try { forwarded.sheets = (await fetch(sheetsUrl, { method:'POST',
+  headers:{'Content-Type':'application/json'}, body:JSON.stringify(rec) })).ok; } catch(e){} }
+// return res.status(200).json({ success:true, stored, emailed, forwarded, id: rec.id });
+```
+Because the lead is already stored and emailed above, a GHL or Sheets outage
+never loses a lead. You are never locked in.
+
+## 6. Vercel setup (one time per project)
 1. **Storage tab** -> connect a **Blob store** (auto-adds `BLOB_READ_WRITE_TOKEN`).
 2. Add env `ADMIN_TOKEN` = your dashboard password.
 3. **Email (optional, later):** add `RESEND_API_KEY` and verify YOURDOMAIN.com in
    Resend so `leads@YOURDOMAIN.com` can send. Until then leads still store; the
    email just stays off.
-4. Redeploy.
+4. **Fan-out (optional):** add `GHL_WEBHOOK_URL` and/or `SHEETS_WEBHOOK_URL`.
+5. Redeploy.
 
 ## Notes
 - Replace `YOURDOMAIN.com`, `YOURPROJECT`, and `you@YOURDOMAIN.com` throughout.

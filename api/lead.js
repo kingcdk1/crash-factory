@@ -123,7 +123,40 @@ export default async function handler(req, res) {
         console.log('LEAD (no email service configured):\n' + emailBody);
       }
 
-      return res.status(200).json({ success: true, stored, emailed, id: record.id });
+      // 3) OPTIONAL FAN-OUT - forward a copy to GoHighLevel and/or Google Sheets.
+      // These are downstream copies only. The lead is already stored + emailed
+      // above, so we never depend on them. Each is off until its URL is set.
+      const forwarded = { ghl: false, sheets: false };
+
+      const ghlUrl = process.env.GHL_WEBHOOK_URL;
+      if (ghlUrl) {
+        try {
+          const r = await fetch(ghlUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(record)
+          });
+          forwarded.ghl = r.ok;
+        } catch (ghlErr) {
+          console.error('GHL forward failed:', ghlErr);
+        }
+      }
+
+      const sheetsUrl = process.env.SHEETS_WEBHOOK_URL;
+      if (sheetsUrl) {
+        try {
+          const r = await fetch(sheetsUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(record)
+          });
+          forwarded.sheets = r.ok;
+        } catch (sheetsErr) {
+          console.error('Sheets forward failed:', sheetsErr);
+        }
+      }
+
+      return res.status(200).json({ success: true, stored, emailed, forwarded, id: record.id });
     } catch (e) {
       console.error('Lead handler error:', e);
       return res.status(500).json({ error: e.message });
