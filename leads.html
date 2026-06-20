@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads | The Crash Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--black:#0a0a0a;--dark:#111;--dark2:#161616;--dark3:#222;--gray:#999;--lgray:#ccc;--white:#f0f0f0;--red:#e81a1a;--redd:#c41414;--rg:rgba(232,26,26,.25);--rs:rgba(232,26,26,.08)}
+body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--white);line-height:1.55;min-height:100vh}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.icon-filled{font-variation-settings:'FILL' 1}
+.ctn{max-width:1100px;margin:0 auto;padding:0 20px}
+a{color:var(--red);text-decoration:none}
+
+/* HEADER */
+header{background:var(--black);border-bottom:1px solid var(--dark3);padding:14px 0;position:sticky;top:0;z-index:50}
+header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{height:42px}
+.brand h1{font-family:'Oswald',sans-serif;font-size:22px;text-transform:uppercase;letter-spacing:1px}
+.brand h1 .red{color:var(--red)}
+.htools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--dark2);border:1px solid var(--dark3);color:var(--white);
+  padding:9px 15px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(--red);color:var(--red)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.red:hover{background:var(--redd);color:#fff}
+.btn .material-symbols-outlined{font-size:18px}
+
+/* LOGIN */
+.login{position:fixed;inset:0;background:rgba(8,8,8,.96);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.login .box{background:var(--dark2);border:1px solid var(--dark3);border-radius:10px;padding:34px;max-width:380px;width:100%;text-align:center}
+.login img{height:54px;margin-bottom:18px}
+.login h2{font-family:'Oswald',sans-serif;font-size:24px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.login p{color:var(--gray);font-size:14px;margin-bottom:20px}
+.login input{width:100%;background:var(--dark);border:1px solid var(--dark3);border-radius:5px;padding:13px 14px;color:#fff;font-size:15px;margin-bottom:14px}
+.login input:focus{outline:none;border-color:var(--red)}
+.login .err{color:var(--red);font-size:13px;margin-top:12px;display:none}
+
+/* TOOLBAR */
+.toolbar{padding:22px 0 8px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.stat{background:var(--dark2);border:1px solid var(--dark3);border-radius:8px;padding:14px 18px;min-width:120px}
+.stat .n{font-family:'Oswald',sans-serif;font-size:30px;color:var(--red);line-height:1}
+.stat .l{color:var(--gray);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ftab{background:var(--dark2);border:1px solid var(--dark3);color:var(--lgray);padding:7px 14px;border-radius:20px;
+  font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.ftab.active,.ftab:hover{background:var(--red);border-color:var(--red);color:#fff}
+.search{width:100%;background:var(--dark2);border:1px solid var(--dark3);border-radius:6px;padding:12px 14px;color:#fff;font-size:14px;margin-bottom:8px}
+.search:focus{outline:none;border-color:var(--red)}
+
+/* LEADS */
+.leads{padding:8px 0 60px}
+.lead{background:var(--dark2);border:1px solid var(--dark3);border-left:3px solid var(--red);border-radius:8px;padding:18px 20px;margin-bottom:12px}
+.lead .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.lead .who{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:.5px}
+.lead .type{display:inline-block;background:var(--rs);border:1px solid rgba(232,26,26,.3);color:var(--red);font-size:11px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:4px}
+.lead .when{color:#666;font-size:12px;white-space:nowrap}
+.lead .row{display:flex;gap:20px;flex-wrap:wrap;margin-top:4px}
+.lead .row .it{display:inline-flex;align-items:center;gap:6px;color:var(--lgray);font-size:14px}
+.lead .row .it .material-symbols-outlined{font-size:17px;color:var(--red)}
+.lead .msg{color:var(--gray);font-size:14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--dark3);white-space:pre-wrap}
+.lead .flds{margin-top:8px;font-size:13px;color:var(--gray)}
+.lead .flds b{color:var(--lgray);font-weight:600}
+.empty{text-align:center;color:var(--gray);padding:60px 20px}
+.empty .material-symbols-outlined{font-size:48px;color:var(--dark3);display:block;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="login">
+  <div class="box">
+    <img src="logo.png" alt="The Crash Factory">
+    <h2>Leads</h2>
+    <p>Enter the admin password to view your leads.</p>
+    <input id="pass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn red" style="width:100%;justify-content:center" onclick="doLogin()"><span class="material-symbols-outlined">lock_open</span> View Leads</button>
+    <div class="err" id="err">Wrong password. Try again.</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header><div class="ctn">
+  <div class="brand"><img src="logo.png" alt="The Crash Factory"><h1>Crash Factory <span class="red">Leads</span></h1></div>
+  <div class="htools">
+    <button class="btn" onclick="loadLeads()"><span class="material-symbols-outlined">refresh</span> Refresh</button>
+    <button class="btn" onclick="exportCSV()"><span class="material-symbols-outlined">download</span> Export CSV</button>
+    <a class="btn" href="index.html"><span class="material-symbols-outlined">home</span> Site</a>
+  </div>
+</div></header>
+
+<div class="ctn">
+  <div class="toolbar" id="toolbar" style="display:none">
+    <div class="stats" id="stats"></div>
+    <div class="filters" id="filters"></div>
+    <input class="search" id="search" placeholder="Search name, phone, email, message..." oninput="render()">
+  </div>
+  <div class="leads" id="leads"></div>
+</div>
+
+<script>
+var LEAD_API = 'https://crash-factory-pay.vercel.app/api/lead';
+var ADMIN_PASS = '';
+var ALL = [];
+var filterType = 'all';
+
+async function doLogin(){
+  var pass = document.getElementById('pass').value;
+  if(!pass) return;
+  ADMIN_PASS = pass;
+  var ok = await loadLeads(true);
+  if(ok){
+    document.getElementById('login').style.display='none';
+    document.getElementById('toolbar').style.display='block';
+  } else {
+    document.getElementById('err').style.display='block';
+  }
+}
+
+async function loadLeads(silent){
+  if(!ADMIN_PASS){ return false; }
+  try{
+    var res = await fetch(LEAD_API + '?password=' + encodeURIComponent(ADMIN_PASS), { cache:'no-store' });
+    if(res.status===401){ return false; }
+    var data = await res.json();
+    ALL = Array.isArray(data.leads) ? data.leads : [];
+    render();
+    return true;
+  }catch(e){
+    if(!silent) alert('Could not load leads: ' + e.message);
+    return false;
+  }
+}
+
+function uniqueTypes(){
+  var t = {};
+  ALL.forEach(function(l){ t[l.type||'lead'] = (t[l.type||'lead']||0)+1; });
+  return t;
+}
+
+function render(){
+  var types = uniqueTypes();
+  // stats
+  var stats = document.getElementById('stats');
+  var statHtml = '<div class="stat"><div class="n">'+ALL.length+'</div><div class="l">Total Leads</div></div>';
+  Object.keys(types).sort().forEach(function(t){
+    statHtml += '<div class="stat"><div class="n">'+types[t]+'</div><div class="l">'+t+'</div></div>';
+  });
+  stats.innerHTML = statHtml;
+  // filters
+  var f = document.getElementById('filters');
+  var fHtml = '<div class="ftab'+(filterType==='all'?' active':'')+'" onclick="setFilter(\'all\')">All</div>';
+  Object.keys(types).sort().forEach(function(t){
+    fHtml += '<div class="ftab'+(filterType===t?' active':'')+'" onclick="setFilter(\''+t+'\')">'+t+'</div>';
+  });
+  f.innerHTML = fHtml;
+  // list
+  var q = (document.getElementById('search').value||'').toLowerCase();
+  var list = ALL.filter(function(l){
+    if(filterType!=='all' && (l.type||'lead')!==filterType) return false;
+    if(q){
+      var hay = (l.name+' '+l.phone+' '+l.email+' '+l.message+' '+JSON.stringify(l.fields||{})).toLowerCase();
+      if(hay.indexOf(q)===-1) return false;
+    }
+    return true;
+  });
+  var box = document.getElementById('leads');
+  if(!list.length){
+    box.innerHTML = '<div class="empty"><span class="material-symbols-outlined">inbox</span>No leads yet. New form submissions will show up here.</div>';
+    return;
+  }
+  box.innerHTML = list.map(leadCard).join('');
+}
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+
+function leadCard(l){
+  var when = '';
+  try{ when = new Date(l.createdAt).toLocaleString('en-US',{timeZone:'America/Chicago'}); }catch(e){ when = l.createdAt||''; }
+  var fields = (l.fields && Object.keys(l.fields).length)
+    ? '<div class="flds">'+Object.keys(l.fields).map(function(k){return '<b>'+esc(k)+':</b> '+esc(l.fields[k]);}).join(' &nbsp;&bull;&nbsp; ')+'</div>'
+    : '';
+  return '<div class="lead">'
+    + '<div class="top"><div><span class="who">'+esc(l.name||'No name')+'</span> &nbsp; <span class="type">'+esc(l.type||'lead')+'</span></div><div class="when">'+esc(when)+'</div></div>'
+    + '<div class="row">'
+    + (l.phone?'<a class="it" href="tel:'+esc(l.phone)+'"><span class="material-symbols-outlined">call</span>'+esc(l.phone)+'</a>':'')
+    + (l.email?'<a class="it" href="mailto:'+esc(l.email)+'"><span class="material-symbols-outlined">mail</span>'+esc(l.email)+'</a>':'')
+    + '</div>'
+    + (l.message?'<div class="msg">'+esc(l.message)+'</div>':'')
+    + fields
+    + '</div>';
+}
+
+function setFilter(t){ filterType = t; render(); }
+
+function exportCSV(){
+  if(!ALL.length){ alert('No leads to export.'); return; }
+  var cols = ['createdAt','type','name','phone','email','message','fields'];
+  var rows = [cols.join(',')];
+  ALL.forEach(function(l){
+    var vals = cols.map(function(c){
+      var v = c==='fields' ? JSON.stringify(l.fields||{}) : (l[c]==null?'':l[c]);
+      return '"'+String(v).replace(/"/g,'""')+'"';
+    });
+    rows.push(vals.join(','));
+  });
+  var blob = new Blob([rows.join('\n')], {type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'crashfactory-leads.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
