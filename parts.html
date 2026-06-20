@@ -296,6 +296,7 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
     <a href="index.html#gallery">Gallery</a>
     <a href="parts.html" class="active">Parts</a>
     <a href="index.html#about">About</a>
+    <a href="links.html">Links</a>
     <a href="index.html#contact">Contact</a>
     <button class="cart-btn" onclick="toggleCart()">
       <span class="material-symbols-outlined">shopping_cart</span> Cart
@@ -413,7 +414,7 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
           </span>
         </label>
       </div>
-      <button class="submit-btn" onclick="savePart()"><span class="material-symbols-outlined">save</span> Save Part</button>
+      <button class="submit-btn" id="savePartBtn" onclick="savePart()"><span class="material-symbols-outlined">save</span> Save Part</button>
     </div>
   </div>
 </div>
@@ -523,27 +524,27 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
 const ADMIN_PASS = 'crashfactory2026';
 const TAX_RATE = 0.0825; // Texas 6.25% + Dallas 2% = 8.25%
 
-// Vercel backend endpoint - live at https://crash-factory-pay.vercel.app
+// Vercel backend endpoints - live at https://crash-factory-pay.vercel.app
 const PAYMENT_ENDPOINT = 'https://crash-factory-pay.vercel.app/api/charge';
+const PARTS_API  = 'https://crash-factory-pay.vercel.app/api/parts';
+const UPLOAD_API = 'https://crash-factory-pay.vercel.app/api/upload';
 
 // ============================================
-// PARTS DATA (localStorage)
+// PARTS DATA (shared cloud store via Vercel Blob)
+// ----------------------------------------------
+// The catalog lives in the cloud so every customer on every device sees the
+// same parts and photos. partsCache is the in-memory copy the UI reads from;
+// localStorage is now only an offline fallback cache, not the source of truth.
+// This fixes the old bug where parts added by the admin only showed on the
+// admin's own device, and where base64 photos overflowed localStorage.
 // ============================================
-function getParts(){ return JSON.parse(localStorage.getItem('cf_parts')||'[]'); }
-function saveParts(p){
-  try {
-    localStorage.setItem('cf_parts',JSON.stringify(p));
-    return true;
-  } catch(e) {
-    console.error('saveParts failed:', e);
-    alert('Could not save: browser storage is full. Try a smaller photo, or remove an existing part first.\n\nFor unlimited HD photos, we need to set up cloud storage (Vercel Blob) - ask Claude to wire it up.');
-    return false;
-  }
-}
+let partsCache = [];
+try { partsCache = JSON.parse(localStorage.getItem('cf_parts')||'[]'); } catch(e){ partsCache = []; }
+
+function getParts(){ return partsCache.slice(); }
 function nextId(){ return Date.now() + Math.floor(Math.random()*1000); }
 
-// Seed 20 placeholder slots if empty
-if(getParts().length===0){
+function buildSeed(){
   const seed=[];
   for(let i=1;i<=20;i++){
     seed.push({
@@ -558,7 +559,63 @@ if(getParts().length===0){
       img:''
     });
   }
-  saveParts(seed);
+  return seed;
+}
+
+// Load the catalog from the cloud on page open. Falls back to the local cache
+// (or fresh seed slots) if the API is unreachable so the page is never blank.
+async function loadParts(){
+  try {
+    const res = await fetch(PARTS_API, { cache:'no-store' });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'load failed');
+    let parts = Array.isArray(data.parts) ? data.parts : [];
+    if(parts.length===0){
+      // Brand-new store: seed it once so admins have slots to edit.
+      parts = buildSeed();
+      saveParts(parts);
+    }
+    partsCache = parts;
+    try { localStorage.setItem('cf_parts',JSON.stringify(parts)); } catch(e){}
+  } catch(e){
+    console.error('loadParts failed, using local cache:', e);
+    if(partsCache.length===0) partsCache = buildSeed();
+  }
+  renderProducts();
+}
+
+// Persist the catalog. Updates memory + local cache instantly (snappy UI) then
+// syncs to the cloud store. Returns a promise resolving true once the cloud
+// accepted the write.
+async function saveParts(p){
+  partsCache = p;
+  try { localStorage.setItem('cf_parts',JSON.stringify(p)); } catch(e){ /* cache only */ }
+  try {
+    const res = await fetch(PARTS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ password: ADMIN_PASS, parts: p })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.success) throw new Error(data.error||'server rejected the save');
+    return true;
+  } catch(e){
+    console.error('saveParts cloud sync failed:', e);
+    alert('Heads up: this change saved on THIS device but did not sync to the live store yet ('+e.message+').\n\nCustomers may not see it until it syncs. Check your internet and try again. If this keeps happening, the Vercel Blob store still needs to be connected in Vercel.');
+    return false;
+  }
+}
+
+// Upload a part photo to the cloud, returns a public URL.
+async function uploadImage(dataUrl){
+  const res = await fetch(UPLOAD_API, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ password: ADMIN_PASS, dataUrl })
+  });
+  const data = await res.json();
+  if(!res.ok || !data.url) throw new Error(data.error||'upload failed');
+  return data.url;
 }
 
 // ============================================
@@ -821,7 +878,7 @@ function handleImgUpload(e){
   reader.readAsDataURL(file);
 }
 
-function savePart(){
+async function savePart(){
   const editId=document.getElementById('partEditId').value;
   const name=document.getElementById('partName').value.trim();
   const pn=document.getElementById('partNumber').value.trim();
@@ -832,19 +889,39 @@ function savePart(){
   const badge=document.getElementById('partBadge').value;
   const featured=document.getElementById('partFeatured').checked;
   if(!name){alert('Please enter a part name.');return;}
+
+  const saveBtn=document.getElementById('savePartBtn');
+  const restoreBtn = saveBtn ? saveBtn.innerHTML : '';
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.innerHTML='<span class="material-symbols-outlined">hourglass_top</span> Saving...'; }
+
+  // A freshly chosen photo is a base64 data URL. Upload it to the cloud and
+  // store the returned URL (not the giant base64) so it persists for everyone.
+  let imgUrl = tempImg;
+  if(tempImg && tempImg.indexOf('data:')===0){
+    try {
+      imgUrl = await uploadImage(tempImg);
+    } catch(e){
+      if(saveBtn){ saveBtn.disabled=false; saveBtn.innerHTML=restoreBtn; }
+      alert('Photo upload failed ('+e.message+'). The part was NOT saved.\nCheck your connection and try again. If it keeps failing, the Vercel Blob store still needs to be connected in Vercel.');
+      return; // keep modal open so work isn't lost
+    }
+  }
+
   let parts=getParts();
   if(editId){
     const idx=parts.findIndex(p=>p.id==editId);
-    if(idx>-1){parts[idx]={...parts[idx],name,pn,cat,desc,origPrice,salePrice,badge,featured,img:tempImg};}
+    if(idx>-1){parts[idx]={...parts[idx],name,pn,cat,desc,origPrice,salePrice,badge,featured,img:imgUrl};}
   }else{
     // New parts go to the TOP, not the bottom
-    parts.unshift({id:nextId(),name,pn,cat,desc,origPrice,salePrice,badge,featured,img:tempImg});
+    parts.unshift({id:nextId(),name,pn,cat,desc,origPrice,salePrice,badge,featured,img:imgUrl});
   }
-  if(saveParts(parts)){
-    closePartModal();
-    renderProducts();
-  }
-  // If save failed, leave modal open so user doesn't lose their work
+
+  await saveParts(parts);
+  if(saveBtn){ saveBtn.disabled=false; saveBtn.innerHTML=restoreBtn; }
+  closePartModal();
+  renderProducts();
+  // saveParts alerts if the cloud sync failed; the change stays in the local
+  // cache either way so it is never lost.
 }
 
 // ============================================
@@ -1086,7 +1163,8 @@ function selectPickup(){
 // ============================================
 // INIT
 // ============================================
-renderProducts();
+renderProducts(); // instant paint from local cache
+loadParts();      // then pull the live catalog from the cloud store
 </script>
 </body>
 </html>

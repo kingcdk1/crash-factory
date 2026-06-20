@@ -1,9 +1,12 @@
 {
   "name": "crash-factory-pay",
   "version": "1.0.0",
-  "description": "The Crash Factory parts checkout payment backend - Valor PayTech",
+  "description": "The Crash Factory parts checkout payment backend - Valor PayTech + Vercel Blob parts store",
   "private": true,
   "engines": {
     "node": ">=18.x"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.27.0"
   }
 }
