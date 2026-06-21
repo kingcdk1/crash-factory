@@ -32,16 +32,26 @@ header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14
 .btn.red{background:var(--red);border-color:var(--red);color:#fff}
 .btn.red:hover{background:var(--redd);color:#fff}
 .btn .material-symbols-outlined{font-size:18px}
+.whoami{display:none;align-items:center;gap:8px;color:var(--gray);font-size:13px}
+.whoami .urole{font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--red);background:var(--rs);border:1px solid rgba(232,26,26,.3);padding:2px 7px;border-radius:4px}
 
 /* LOGIN */
-.login{position:fixed;inset:0;background:rgba(8,8,8,.96);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.login{position:fixed;inset:0;background:rgba(8,8,8,.97);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
 .login .box{background:var(--dark2);border:1px solid var(--dark3);border-radius:10px;padding:34px;max-width:380px;width:100%;text-align:center}
 .login img{height:54px;margin-bottom:18px}
 .login h2{font-family:'Oswald',sans-serif;font-size:24px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
 .login p{color:var(--gray);font-size:14px;margin-bottom:20px}
-.login input{width:100%;background:var(--dark);border:1px solid var(--dark3);border-radius:5px;padding:13px 14px;color:#fff;font-size:15px;margin-bottom:14px}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;color:#222;border:none;border-radius:6px;
+  padding:12px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:opacity .2s}
+.gbtn:hover{opacity:.9}
+.gbtn svg{width:20px;height:20px}
+.orline{display:flex;align-items:center;gap:12px;color:#555;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin:18px 0}
+.orline::before,.orline::after{content:'';flex:1;height:1px;background:var(--dark3)}
+.login input{width:100%;background:var(--dark);border:1px solid var(--dark3);border-radius:5px;padding:12px 14px;color:#fff;font-size:15px;margin-bottom:12px}
 .login input:focus{outline:none;border-color:var(--red)}
-.login .err{color:var(--red);font-size:13px;margin-top:12px;display:none}
+.login .err{color:var(--red);font-size:13px;margin-top:14px;min-height:16px}
+.login .so{margin-top:14px;font-size:13px}
+.login .so a{cursor:pointer}
 
 /* TOOLBAR */
 .toolbar{padding:22px 0 8px}
@@ -81,10 +91,17 @@ header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14
   <div class="box">
     <img src="logo.png" alt="The Crash Factory">
     <h2>Leads</h2>
-    <p>Enter the admin password to view your leads.</p>
-    <input id="pass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn red" style="width:100%;justify-content:center" onclick="doLogin()"><span class="material-symbols-outlined">lock_open</span> View Leads</button>
-    <div class="err" id="err">Wrong password. Try again.</div>
+    <p>Sign in with your Crash Factory account.</p>
+    <button class="gbtn" onclick="googleLogin()">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.3 5.3C41.4 35.6 44 30.3 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>
+      Continue with Google
+    </button>
+    <div class="orline">or</div>
+    <input id="liEmail" type="email" placeholder="Email" autocomplete="username">
+    <input id="liPass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')emailLogin()">
+    <button class="btn red" style="width:100%;justify-content:center" onclick="emailLogin()"><span class="material-symbols-outlined">login</span> Sign In</button>
+    <div class="err" id="err"></div>
+    <div class="so" id="signoutRow" style="display:none"><a onclick="signOut()">Sign out</a></div>
   </div>
 </div>
 
@@ -92,8 +109,10 @@ header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14
 <header><div class="ctn">
   <div class="brand"><img src="logo.png" alt="The Crash Factory"><h1>Crash Factory <span class="red">Leads</span></h1></div>
   <div class="htools">
+    <span class="whoami" id="whoami"><span id="uName"></span><span class="urole" id="uRole"></span></span>
     <button class="btn" onclick="loadLeads()"><span class="material-symbols-outlined">refresh</span> Refresh</button>
     <button class="btn" onclick="exportCSV()"><span class="material-symbols-outlined">download</span> Export CSV</button>
+    <button class="btn" id="hSignout" style="display:none" onclick="signOut()"><span class="material-symbols-outlined">logout</span> Sign Out</button>
     <a class="btn" href="index.html"><span class="material-symbols-outlined">home</span> Site</a>
   </div>
 </div></header>
@@ -107,36 +126,78 @@ header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14
   <div class="leads" id="leads"></div>
 </div>
 
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 var LEAD_API = 'https://crash-factory-pay.vercel.app/api/lead';
-var ADMIN_PASS = '';
-var ALL = [];
-var filterType = 'all';
+var CF = window.CF_CONFIG || {};
+var sb = null, CF_TOKEN = '', ALL = [], filterType = 'all';
 
-async function doLogin(){
-  var pass = document.getElementById('pass').value;
-  if(!pass) return;
-  ADMIN_PASS = pass;
-  var ok = await loadLeads(true);
-  if(ok){
-    document.getElementById('login').style.display='none';
-    document.getElementById('toolbar').style.display='block';
+function loginErr(m){ document.getElementById('err').textContent = m || ''; }
+function showSignoutLink(show){ document.getElementById('signoutRow').style.display = show ? 'block' : 'none'; }
+
+async function googleLogin(){
+  if(!sb) return loginErr('Login is not configured.');
+  loginErr('');
+  await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } });
+}
+async function emailLogin(){
+  if(!sb) return loginErr('Login is not configured.');
+  loginErr('');
+  var email = document.getElementById('liEmail').value.trim();
+  var password = document.getElementById('liPass').value;
+  var resp = await sb.auth.signInWithPassword({ email:email, password:password });
+  if(resp.error) loginErr(resp.error.message);
+}
+async function signOut(){ if(sb) await sb.auth.signOut(); }
+
+async function onSession(session){
+  if(session && session.user){
+    CF_TOKEN = session.access_token || '';
+    var role = 'staff';
+    try{
+      var r = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+      if(r.data && r.data.role) role = r.data.role;
+    }catch(e){ /* profile may not exist yet -> staff */ }
+
+    if(role === 'admin' || role === 'manager'){
+      var name = (session.user.user_metadata && session.user.user_metadata.full_name) || session.user.email || 'Signed in';
+      document.getElementById('uName').textContent = name;
+      document.getElementById('uRole').textContent = role;
+      document.getElementById('whoami').style.display = 'flex';
+      document.getElementById('hSignout').style.display = 'inline-flex';
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('toolbar').style.display = 'block';
+      loadLeads();
+    } else {
+      // Signed in but not allowed to see leads.
+      document.getElementById('login').style.display = 'flex';
+      document.getElementById('toolbar').style.display = 'none';
+      document.getElementById('leads').innerHTML = '';
+      loginErr('This account (' + (session.user.email||'') + ') does not have leads access. Ask an admin to grant it, or sign out.');
+      showSignoutLink(true);
+    }
   } else {
-    document.getElementById('err').style.display='block';
+    CF_TOKEN = '';
+    document.getElementById('whoami').style.display = 'none';
+    document.getElementById('hSignout').style.display = 'none';
+    document.getElementById('login').style.display = 'flex';
+    document.getElementById('toolbar').style.display = 'none';
+    showSignoutLink(false);
   }
 }
 
-async function loadLeads(silent){
-  if(!ADMIN_PASS){ return false; }
+async function loadLeads(){
+  if(!CF_TOKEN) return false;
   try{
-    var res = await fetch(LEAD_API + '?password=' + encodeURIComponent(ADMIN_PASS), { cache:'no-store' });
-    if(res.status===401){ return false; }
+    var res = await fetch(LEAD_API, { headers:{ 'Authorization':'Bearer ' + CF_TOKEN }, cache:'no-store' });
+    if(res.status === 401){ loginErr('Not authorized to read leads.'); return false; }
     var data = await res.json();
     ALL = Array.isArray(data.leads) ? data.leads : [];
     render();
     return true;
   }catch(e){
-    if(!silent) alert('Could not load leads: ' + e.message);
+    alert('Could not load leads: ' + e.message);
     return false;
   }
 }
@@ -149,21 +210,20 @@ function uniqueTypes(){
 
 function render(){
   var types = uniqueTypes();
-  // stats
   var stats = document.getElementById('stats');
   var statHtml = '<div class="stat"><div class="n">'+ALL.length+'</div><div class="l">Total Leads</div></div>';
   Object.keys(types).sort().forEach(function(t){
     statHtml += '<div class="stat"><div class="n">'+types[t]+'</div><div class="l">'+t+'</div></div>';
   });
   stats.innerHTML = statHtml;
-  // filters
+
   var f = document.getElementById('filters');
   var fHtml = '<div class="ftab'+(filterType==='all'?' active':'')+'" onclick="setFilter(\'all\')">All</div>';
   Object.keys(types).sort().forEach(function(t){
     fHtml += '<div class="ftab'+(filterType===t?' active':'')+'" onclick="setFilter(\''+t+'\')">'+t+'</div>';
   });
   f.innerHTML = fHtml;
-  // list
+
   var q = (document.getElementById('search').value||'').toLowerCase();
   var list = ALL.filter(function(l){
     if(filterType!=='all' && (l.type||'lead')!==filterType) return false;
@@ -219,6 +279,17 @@ function exportCSV(){
   a.download = 'crashfactory-leads.csv';
   a.click();
 }
+
+// ---- INIT ----
+(function(){
+  if(CF.SUPABASE_URL && CF.SUPABASE_ANON_KEY && window.supabase){
+    sb = window.supabase.createClient(CF.SUPABASE_URL, CF.SUPABASE_ANON_KEY);
+    sb.auth.getSession().then(function(r){ onSession(r.data.session); }).catch(function(){ onSession(null); });
+    sb.auth.onAuthStateChange(function(_e, session){ onSession(session); });
+  } else {
+    loginErr('Login library failed to load. Refresh the page.');
+  }
+})();
 </script>
 </body>
 </html>

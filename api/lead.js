@@ -42,10 +42,10 @@ export default async function handler(req, res) {
 
   const token = process.env.BLOB_READ_WRITE_TOKEN;
 
-  // ---- READ stored leads (admin) ----
+  // ---- READ stored leads (admin / manager) ----
   if (req.method === 'GET') {
-    const adminToken = process.env.ADMIN_TOKEN || 'crashfactory2026';
-    if ((req.query.password || '') !== adminToken) {
+    const authorized = await isAuthorizedReader(req);
+    if (!authorized) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     if (!token) {
@@ -164,6 +164,43 @@ export default async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// Shared Supabase identity (same project as Revenue Board). These are public.
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://gcrzmiwgjvuujffbqjbq.supabase.co';
+const SUPABASE_ANON = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjcnptaXdnanZ1dWpmZmJxamJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjQyODYsImV4cCI6MjA5NzQwMDI4Nn0.6Rol3Pxmh8kC_bvr5XkWa3k5s0gRcK9jfLKYmCHM1Ns';
+
+// A reader is allowed if they present a Supabase token for an admin/manager,
+// OR (temporarily) the legacy shared password until auth is fully cut over.
+async function isAuthorizedReader(req) {
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('Bearer ')) {
+    const role = await supabaseRole(auth.slice(7));
+    return role === 'admin' || role === 'manager';
+  }
+  const adminToken = process.env.ADMIN_TOKEN || 'crashfactory2026';
+  return (req.query.password || '') === adminToken;
+}
+
+// Validate a Supabase access token and return the user's role, or null.
+async function supabaseRole(accessToken) {
+  try {
+    const ures = await fetch(SUPABASE_URL + '/auth/v1/user', {
+      headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + accessToken }
+    });
+    if (!ures.ok) return null;
+    const user = await ures.json();
+    if (!user || !user.id) return null;
+    const pres = await fetch(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + user.id + '&select=role', {
+      headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + accessToken }
+    });
+    if (!pres.ok) return null;
+    const rows = await pres.json();
+    return (rows[0] && rows[0].role) || 'staff';
+  } catch (e) {
+    console.error('supabaseRole failed:', e);
+    return null;
+  }
 }
 
 async function readLeads(token) {
