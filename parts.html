@@ -361,9 +361,15 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
     <h3><span class="material-symbols-outlined" style="color:var(--red);font-size:28px">lock</span><br>Admin Login</h3>
-    <div class="login-err" id="loginErr">Wrong password</div>
-    <input type="password" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="submit-btn" onclick="doLogin()" style="margin-top:0">Log In</button>
+    <button class="submit-btn" onclick="googleLogin()" style="margin-top:0;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;gap:10px">
+      <svg viewBox="0 0 48 48" style="width:20px;height:20px"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.3 5.3C41.4 35.6 44 30.3 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>
+      Continue with Google
+    </button>
+    <div style="display:flex;align-items:center;gap:10px;color:#555;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin:14px 0"><span style="flex:1;height:1px;background:var(--dark3)"></span>or<span style="flex:1;height:1px;background:var(--dark3)"></span></div>
+    <input type="email" id="loginEmail" placeholder="Email" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')emailLogin()" style="margin-top:10px">
+    <button class="submit-btn" onclick="emailLogin()" style="margin-top:10px">Sign In</button>
+    <div class="login-err" id="loginErr" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -518,12 +524,25 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
   <div class="fbot"><p>&copy; 2026 The Crash Factory. All rights reserved.</p><p><a href="https://www.thecrashfactory.com">thecrashfactory.com</a></p></div>
 </div></footer>
 
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ============================================
 // CONFIG
 // ============================================
-const ADMIN_PASS = 'crashfactory2026';
+const ADMIN_PASS = 'crashfactory2026'; // legacy fallback only; real gate is Supabase below
 const TAX_RATE = 0.0825; // Texas 6.25% + Dallas 2% = 8.25%
+
+// Shared Supabase identity (same project as Revenue Board / the leads dashboard)
+const CF = window.CF_CONFIG || {};
+let cfSb = null, CF_TOKEN = '';
+// Auth headers for admin write calls: Supabase token when signed in, plus the
+// legacy password as a transitional fallback the API still accepts.
+function authHeaders(){
+  var h = { 'Content-Type':'application/json' };
+  if(CF_TOKEN) h['Authorization'] = 'Bearer ' + CF_TOKEN;
+  return h;
+}
 
 // Vercel backend endpoints - live at https://crash-factory-pay.vercel.app
 const PAYMENT_ENDPOINT = 'https://crash-factory-pay.vercel.app/api/charge';
@@ -594,7 +613,7 @@ async function saveParts(p){
   try {
     const res = await fetch(PARTS_API, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:authHeaders(),
       body:JSON.stringify({ password: ADMIN_PASS, parts: p })
     });
     const data = await res.json();
@@ -611,7 +630,7 @@ async function saveParts(p){
 async function uploadImage(dataUrl){
   const res = await fetch(UPLOAD_API, {
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:authHeaders(),
     body:JSON.stringify({ password: ADMIN_PASS, dataUrl })
   });
   const data = await res.json();
@@ -765,29 +784,61 @@ function movePart(id, direction){
 // ============================================
 // ADMIN LOGIN
 // ============================================
-function showLogin(){document.getElementById('loginOverlay').classList.add('open');document.getElementById('loginPass').focus();}
-function doLogin(){
-  const pass=document.getElementById('loginPass').value;
-  if(pass===ADMIN_PASS){
-    isAdmin=true;
-    document.getElementById('loginOverlay').classList.remove('open');
-    document.getElementById('adminBar').classList.add('show');
-    document.getElementById('adminGear').style.display='none';
-    document.getElementById('productsContainer').classList.add('admin-mode');
-    document.getElementById('loginPass').value='';
-    document.getElementById('loginErr').style.display='none';
-    renderProducts();
-  } else {
-    document.getElementById('loginErr').style.display='block';
-  }
+function showLogin(){document.getElementById('loginOverlay').classList.add('open');}
+function partsLoginErr(m){var e=document.getElementById('loginErr');e.textContent=m||'';e.style.display=m?'block':'none';}
+
+async function googleLogin(){
+  if(!cfSb) return partsLoginErr('Login is not configured.');
+  partsLoginErr('');
+  await cfSb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } });
 }
-function logoutAdmin(){
+async function emailLogin(){
+  if(!cfSb) return partsLoginErr('Login is not configured.');
+  partsLoginErr('');
+  var email=document.getElementById('loginEmail').value.trim();
+  var password=document.getElementById('loginPass').value;
+  var resp=await cfSb.auth.signInWithPassword({ email:email, password:password });
+  if(resp.error) partsLoginErr(resp.error.message);
+}
+
+function enterAdmin(){
+  isAdmin=true;
+  document.getElementById('loginOverlay').classList.remove('open');
+  document.getElementById('adminBar').classList.add('show');
+  document.getElementById('adminGear').style.display='none';
+  document.getElementById('productsContainer').classList.add('admin-mode');
+  partsLoginErr('');
+  renderProducts();
+}
+function exitAdmin(){
   isAdmin=false;
   document.getElementById('adminBar').classList.remove('show');
   document.getElementById('adminGear').style.display='flex';
   document.getElementById('productsContainer').classList.remove('admin-mode');
   renderProducts();
 }
+async function logoutAdmin(){ if(cfSb) await cfSb.auth.signOut(); exitAdmin(); }
+
+async function onPartsSession(session){
+  if(session && session.user){
+    CF_TOKEN = session.access_token || '';
+    var role='staff';
+    try{ var r=await cfSb.from('profiles').select('role').eq('id',session.user.id).single(); if(r.data&&r.data.role) role=r.data.role; }catch(e){}
+    if(role==='admin' || role==='manager'){ enterAdmin(); }
+    else { CF_TOKEN=''; exitAdmin(); partsLoginErr('This account does not have admin access.'); document.getElementById('loginOverlay').classList.add('open'); }
+  } else {
+    CF_TOKEN=''; exitAdmin();
+  }
+}
+
+// Supabase init - the real admin gate (public visitors never need to log in)
+(function(){
+  if(CF.SUPABASE_URL && CF.SUPABASE_ANON_KEY && window.supabase){
+    cfSb = window.supabase.createClient(CF.SUPABASE_URL, CF.SUPABASE_ANON_KEY);
+    cfSb.auth.getSession().then(function(r){ onPartsSession(r.data.session); }).catch(function(){});
+    cfSb.auth.onAuthStateChange(function(_e,session){ onPartsSession(session); });
+  }
+})();
 
 // ============================================
 // ADD / EDIT / DELETE PARTS
