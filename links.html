@@ -17,6 +17,29 @@ body{background:var(--black);color:var(--white);font-family:'Barlow',sans-serif;
     linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
   background-size:auto,42px 42px,42px 42px}
 .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.ctn{max-width:1200px;margin:0 auto;padding:0 24px}
+
+/* TOP BAR + HEADER (same as the rest of the site) */
+.top-bar{background:var(--red);padding:10px 0;font-size:14px;font-weight:600}
+.top-bar .ctn{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.top-bar a{color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.top-bar a:hover{opacity:.8}
+.top-bar a .material-symbols-outlined{font-size:18px}
+.tbl{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.tbr{display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.2);padding:4px 14px;border-radius:3px;font-weight:700;letter-spacing:.5px;font-size:13px}
+.tbr .material-symbols-outlined{font-size:18px}
+header{background:var(--black);border-bottom:1px solid var(--dark3);padding:12px 0;position:sticky;top:0;z-index:1000}
+header .ctn{display:flex;justify-content:space-between;align-items:center}
+.logo-img{height:64px;width:auto;display:block}
+nav{display:flex;gap:28px;align-items:center}
+nav a{color:var(--lgray);text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;transition:color .2s}
+nav a:hover{color:var(--red)}
+nav a.active{color:var(--red)}
+.nav-cta{background:var(--red)!important;color:#fff!important;padding:10px 22px;border-radius:4px;transition:background .2s,transform .2s!important}
+.nav-cta:hover{background:var(--redd)!important;transform:translateY(-1px)}
+.mt{display:none;background:none;border:none;color:var(--white);font-size:28px;cursor:pointer}
+@media(max-width:768px){.top-bar .ctn{justify-content:center;text-align:center}.tbl{justify-content:center}nav{display:none}.mt{display:block}nav.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:var(--dark);padding:20px;border-bottom:2px solid var(--dark3);gap:14px;z-index:999}}
+
 .wrap{max-width:520px;margin:0 auto;padding:46px 22px 60px;text-align:center}
 .logo{width:230px;max-width:78%;margin:0 auto 18px;display:block}
 .tag{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:#fff;padding:7px 18px;border-radius:4px;
@@ -54,9 +77,32 @@ h1 .red{color:var(--red)}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <a href="index.html"><img src="logo.png" alt="The Crash Factory - Dallas Auto Body Shop" class="logo"></a>
+<!-- TOP BAR -->
+<div class="top-bar"><div class="ctn">
+  <div class="tbl">
+    <a href="tel:+12145096194"><span class="material-symbols-outlined" style="font-size:18px">phone</span> 214-509-6194 Call or Text</a>
+    <a href="mailto:admin@thecrashfactory.com"><span class="material-symbols-outlined" style="font-size:18px">mail</span> admin@thecrashfactory.com</a>
+  </div>
+  <div class="tbr"><span class="material-symbols-outlined" style="font-size:18px">schedule</span> 24/7 SERVICE &bull; ALL INSURANCE WELCOME</div>
+</div></div>
+
+<!-- HEADER -->
+<header><div class="ctn">
+  <a href="index.html"><img src="logo.png" alt="The Crash Factory - Dallas Auto Body Shop" class="logo-img"></a>
+  <button class="mt" onclick="document.querySelector('nav').classList.toggle('open')" aria-label="Menu"><span class="material-symbols-outlined">menu</span></button>
+  <nav>
+    <a href="index.html#services">Services</a>
+    <a href="index.html#gallery">Gallery</a>
+    <a href="parts.html">Parts</a>
+    <a href="towzero.html" style="color:var(--red);font-weight:700">TowZero</a>
+    <a href="links.html" class="active">Links</a>
+    <a href="index.html#contact">Contact</a>
+    <a href="index.html#contact" class="nav-cta">Free Estimate</a>
+  </nav>
+</div></header>
+
+<div class="wrap">
 
   <div class="tag"><span class="material-symbols-outlined" style="font-size:16px">bolt</span> 24/7 Service</div>
   <h1>We Fix What <span class="red">Life Wrecks</span></h1>
