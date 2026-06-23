@@ -82,6 +82,36 @@ header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14
 .lead .flds b{color:var(--lgray);font-weight:600}
 .empty{text-align:center;color:var(--gray);padding:60px 20px}
 .empty .material-symbols-outlined{font-size:48px;color:var(--dark3);display:block;margin-bottom:12px}
+
+/* ROLES & ACCESS BOARD (owner-only) — same look as the Blast kit */
+.rbwrap{margin:4px 0 18px}
+.rb{background:#0e1626;border:1px solid #28365a;border-radius:16px;padding:16px}
+.rbhead{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.rbtitle{font-size:15px;font-weight:700;color:#eaf0fb}
+.rbsub{font-size:11px;color:#7d8db0}
+.rbnote{font-size:11px;color:#7d8db0;margin-bottom:14px}
+.rberr{font-size:12px;color:#ffb4b4;background:#3a1620;border:1px solid #5a2230;border-radius:8px;padding:8px 12px;margin-bottom:12px}
+.rbempty{font-size:12px;color:#7d8db0}
+.rbcard{background:#18233d;border:1px solid #28365a;border-radius:12px;padding:13px 14px;margin-bottom:10px}
+.rbtop{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:11px}
+.rbwho{display:flex;align-items:center;gap:10px}
+.rbav{width:34px;height:34px;border-radius:50%;background:#1e3a6b;color:#9cc4ff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.rbname{font-size:14px;color:#eaf0fb}
+.rbemail{font-size:11px;color:#7d8db0}
+.rbroles{display:flex;background:#0e1626;border:1px solid #28365a;border-radius:999px;padding:2px}
+.rbrole{border:none;cursor:pointer;font-family:inherit;font-size:10px;font-weight:500;padding:4px 11px;border-radius:999px;background:transparent;color:#7d8db0;text-transform:capitalize}
+.rbrole.on{background:#3b82f6;color:#0e1626;font-weight:700;cursor:default}
+.rbrole:disabled{opacity:.6}
+.rbacclbl{font-size:10px;color:#7d8db0;margin-bottom:6px}
+.rbapps{display:flex;gap:6px;flex-wrap:wrap}
+.rbapp{font-size:11px;padding:5px 10px;border-radius:7px;font-weight:500;font-family:inherit;cursor:pointer;border:1px solid #2f3e63;background:transparent;color:#7d8db0}
+.rbapp.on{background:#3b82f6;color:#0e1626;border-color:#3b82f6}
+.rbapp.sens{border-color:#5a3a18;color:#b07a3a}
+.rbapp.sens.on{background:#7a4510;color:#ffcf8f;border-color:#7a4510}
+.rbapp.locked,.rbapp:disabled{cursor:default}
+.rbleg{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid #28365a;font-size:11px;color:#7d8db0}
+.rbleg .lg{display:inline-block;width:10px;height:10px;border-radius:3px;border:1px solid #2f3e63;vertical-align:-1px}
+.rbleg .lg.on{background:#3b82f6;border-color:#3b82f6}
 </style>
 </head>
 <body>
@@ -123,6 +153,8 @@ header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14
     <div class="filters" id="filters"></div>
     <input class="search" id="search" placeholder="Search name, phone, email, message..." oninput="render()">
   </div>
+  <!-- Owner-only Roles & Access board (mirrors the standard Five Stone kit) -->
+  <div class="rbwrap" id="rolesBoard" style="display:none"></div>
   <div class="leads" id="leads"></div>
 </div>
 
@@ -131,7 +163,7 @@ header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14
 <script>
 var LEAD_API = 'https://crash-factory-pay.vercel.app/api/lead';
 var CF = window.CF_CONFIG || {};
-var sb = null, CF_TOKEN = '', ALL = [], filterType = 'all';
+var sb = null, CF_TOKEN = '', CF_EMAIL = '', CF_UID = '', ALL = [], filterType = 'all';
 
 function loginErr(m){ document.getElementById('err').textContent = m || ''; }
 function showSignoutLink(show){ document.getElementById('signoutRow').style.display = show ? 'block' : 'none'; }
@@ -154,13 +186,25 @@ async function signOut(){ if(sb) await sb.auth.signOut(); }
 async function onSession(session){
   if(session && session.user){
     CF_TOKEN = session.access_token || '';
+    CF_EMAIL = session.user.email || '';
+    CF_UID = session.user.id;
     var role = 'staff';
     try{
       var r = await sb.from('profiles').select('role').eq('id', session.user.id).single();
       if(r.data && r.data.role) role = r.data.role;
     }catch(e){ /* profile may not exist yet -> staff */ }
 
-    if(role === 'admin' || role === 'manager'){
+    // Access model (same as Blast): admins reach everything; otherwise the person
+    // needs an enabled app_access row for this site ('crash').
+    var hasAccess = (role === 'admin');
+    if(!hasAccess){
+      try{
+        var aa = await sb.from('app_access').select('enabled').eq('user_id', session.user.id).eq('app', CF.THIS_APP || 'crash').maybeSingle();
+        hasAccess = !!(aa.data && aa.data.enabled);
+      }catch(e){ hasAccess = false; }
+    }
+
+    if(hasAccess){
       var name = (session.user.user_metadata && session.user.user_metadata.full_name) || session.user.email || 'Signed in';
       document.getElementById('uName').textContent = name;
       document.getElementById('uRole').textContent = role;
@@ -169,22 +213,101 @@ async function onSession(session){
       document.getElementById('login').style.display = 'none';
       document.getElementById('toolbar').style.display = 'block';
       loadLeads();
+      loadRolesBoard(); // owner-only inside; no-op for non-owners
     } else {
-      // Signed in but not allowed to see leads.
+      // Signed in but not allowed into this site.
       document.getElementById('login').style.display = 'flex';
       document.getElementById('toolbar').style.display = 'none';
       document.getElementById('leads').innerHTML = '';
-      loginErr('This account (' + (session.user.email||'') + ') does not have leads access. Ask an admin to grant it, or sign out.');
+      document.getElementById('rolesBoard').style.display = 'none';
+      loginErr('This account (' + (session.user.email||'') + ') does not have Crash Factory access. Ask the owner to grant it, or sign out.');
       showSignoutLink(true);
     }
   } else {
-    CF_TOKEN = '';
+    CF_TOKEN = ''; CF_EMAIL = ''; CF_UID = '';
     document.getElementById('whoami').style.display = 'none';
     document.getElementById('hSignout').style.display = 'none';
     document.getElementById('login').style.display = 'flex';
     document.getElementById('toolbar').style.display = 'none';
+    document.getElementById('rolesBoard').style.display = 'none';
     showSignoutLink(false);
   }
+}
+
+// ============================================
+// ROLES & ACCESS BOARD (owner-only) — vanilla port of the standard Five Stone
+// kit (RolesAccessBoard.jsx). Reads shared profiles + app_access, lets the owner
+// set each person's role and toggle which sites they can reach. RLS is the real
+// gate: a non-owner who somehow loads this can't read or write anything.
+// ============================================
+var APPS = CF.APPS || [];
+var rbRows = [], rbAccess = {}, rbBusy = '';
+function rbIsOwner(email){
+  var list = (CF.OWNER_EMAILS || []).map(function(e){ return String(e).toLowerCase(); });
+  return !!email && list.indexOf(String(email).toLowerCase()) >= 0;
+}
+async function loadRolesBoard(){
+  var wrap = document.getElementById('rolesBoard');
+  if(!wrap) return;
+  if(!rbIsOwner(CF_EMAIL)){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  try{
+    var p = await sb.from('profiles').select('id,email,full_name,role').order('full_name');
+    if(p.error) throw p.error;
+    var a = await sb.from('app_access').select('user_id,app,enabled');
+    if(a.error) throw a.error;
+    rbRows = p.data || []; rbAccess = {};
+    (a.data || []).forEach(function(r){ (rbAccess[r.user_id] = rbAccess[r.user_id] || {})[r.app] = r.enabled; });
+    renderRolesBoard('');
+  }catch(e){ renderRolesBoard(e.message || String(e)); }
+}
+async function rbSetRole(userId, role){
+  rbBusy = userId + ':role'; renderRolesBoard('');
+  await sb.from('profiles').update({ role: role }).eq('id', userId);
+  rbBusy = ''; loadRolesBoard();
+}
+async function rbToggle(userId, app, on){
+  rbBusy = userId + ':' + app; renderRolesBoard('');
+  await sb.from('app_access').upsert({ user_id: userId, app: app, enabled: !on, updated_at: new Date().toISOString() }, { onConflict: 'user_id,app' });
+  rbBusy = ''; loadRolesBoard();
+}
+function rbInitials(name, email){
+  var s = (name || email || '?').trim();
+  var parts = s.split(/[\s@.]+/).filter(Boolean);
+  return ((parts[0] || '?')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
+var ROLES = ['admin','manager','staff'];
+function renderRolesBoard(err){
+  var wrap = document.getElementById('rolesBoard');
+  var h = '<div class="rb"><div class="rbhead"><span class="rbtitle">Roles &amp; Access</span>'
+    + '<span class="rbsub">owner-only &middot; you see everyone &times; every site</span></div>'
+    + '<div class="rbnote">Active = blue. Sensitive sites flagged. Role limits what a person can do even where they have access. Admins reach every site.</div>';
+  if(err){ h += '<div class="rberr">Could not load (' + esc(err) + '). If the tables or redirect URLs are not set up yet, finish the Supabase steps first.</div>'; }
+  if(!rbRows.length && !err){ h += '<div class="rbempty">No one has signed in yet. People appear here after their first Google sign-in.</div>'; }
+  rbRows.forEach(function(p){
+    var isAdmin = p.role === 'admin';
+    h += '<div class="rbcard"><div class="rbtop"><div class="rbwho"><div class="rbav">' + esc(rbInitials(p.full_name, p.email)) + '</div>'
+      + '<div><div class="rbname">' + esc(p.full_name || p.email) + '</div><div class="rbemail">' + esc(p.email || '') + '</div></div></div>'
+      + '<div class="rbroles">';
+    ROLES.forEach(function(rl){
+      var on = p.role === rl;
+      var dis = (rbBusy === p.id + ':role') ? ' disabled' : '';
+      h += '<button class="rbrole' + (on ? ' on' : '') + '"' + dis + ' onclick="' + (on ? '' : "rbSetRole('" + p.id + "','" + rl + "')") + '">' + rl + '</button>';
+    });
+    h += '</div></div><div class="rbacclbl">Access</div><div class="rbapps">';
+    APPS.forEach(function(app){
+      var on = isAdmin || !!(rbAccess[p.id] && rbAccess[p.id][app.key]);
+      var cls = 'rbapp' + (app.sensitive ? ' sens' : '') + (on ? ' on' : '') + (isAdmin ? ' locked' : '');
+      var dis = (isAdmin || rbBusy === p.id + ':' + app.key) ? ' disabled' : '';
+      var ttl = isAdmin ? 'Admins reach every site' : (on ? 'Click to revoke' : 'Click to grant');
+      var lock = app.sensitive ? '<span class="material-symbols-outlined" style="font-size:13px;vertical-align:-2px">lock</span> ' : '';
+      h += '<button class="' + cls + '"' + dis + ' title="' + ttl + '" onclick="' + (isAdmin ? '' : "rbToggle('" + p.id + "','" + app.key + "'," + on + ")") + '">' + lock + esc(app.label) + '</button>';
+    });
+    h += '</div></div>';
+  });
+  h += '<div class="rbleg"><span><i class="lg on"></i> has access</span><span><i class="lg"></i> no access</span>'
+    + '<span><span class="material-symbols-outlined" style="font-size:13px;vertical-align:-2px">lock</span> sensitive (financial / credit)</span></div></div>';
+  wrap.innerHTML = h;
 }
 
 async function loadLeads(){

@@ -824,8 +824,14 @@ async function onPartsSession(session){
     CF_TOKEN = session.access_token || '';
     var role='staff';
     try{ var r=await cfSb.from('profiles').select('role').eq('id',session.user.id).single(); if(r.data&&r.data.role) role=r.data.role; }catch(e){}
-    if(role==='admin' || role==='manager'){ enterAdmin(); }
-    else { CF_TOKEN=''; exitAdmin(); partsLoginErr('This account does not have admin access.'); document.getElementById('loginOverlay').classList.add('open'); }
+    // Same access model as Blast: admins reach everything; otherwise need an
+    // enabled app_access row for this site ('crash').
+    var hasAccess = (role==='admin');
+    if(!hasAccess){
+      try{ var aa=await cfSb.from('app_access').select('enabled').eq('user_id',session.user.id).eq('app',(CF.THIS_APP||'crash')).maybeSingle(); hasAccess=!!(aa.data&&aa.data.enabled); }catch(e){ hasAccess=false; }
+    }
+    if(hasAccess){ enterAdmin(); }
+    else { CF_TOKEN=''; exitAdmin(); partsLoginErr('This account does not have Crash Factory access.'); document.getElementById('loginOverlay').classList.add('open'); }
   } else {
     CF_TOKEN=''; exitAdmin();
   }
