@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Blast | The Crash Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--black:#0a0a0a;--dark:#111;--dark2:#161616;--dark3:#222;--gray:#999;--lgray:#ccc;--white:#f0f0f0;--red:#e81a1a;--redd:#c41414;--rg:rgba(232,26,26,.25);--rs:rgba(232,26,26,.08)}
+body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--white);line-height:1.55;min-height:100vh}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.ctn{max-width:900px;margin:0 auto;padding:0 20px}
+a{color:var(--red);text-decoration:none}
+header{background:var(--black);border-bottom:1px solid var(--dark3);padding:14px 0;position:sticky;top:0;z-index:50}
+header .ctn{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;max-width:900px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{height:40px}
+.brand h1{font-family:'Oswald',sans-serif;font-size:21px;text-transform:uppercase;letter-spacing:1px}
+.brand h1 .red{color:var(--red)}
+.htools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--dark2);border:1px solid var(--dark3);color:var(--white);padding:9px 15px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(--red);color:var(--red)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.red:hover{background:var(--redd);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn .material-symbols-outlined{font-size:18px}
+.whoami{display:none;align-items:center;gap:8px;color:var(--gray);font-size:13px}
+.whoami .urole{font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--red);background:var(--rs);border:1px solid rgba(232,26,26,.3);padding:2px 7px;border-radius:4px}
+
+/* LOGIN */
+.login{position:fixed;inset:0;background:rgba(8,8,8,.97);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.login .box{background:var(--dark2);border:1px solid var(--dark3);border-radius:10px;padding:34px;max-width:380px;width:100%;text-align:center}
+.login img{height:54px;margin-bottom:18px}
+.login h2{font-family:'Oswald',sans-serif;font-size:24px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.login p{color:var(--gray);font-size:14px;margin-bottom:20px}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;color:#222;border:none;border-radius:6px;padding:12px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;cursor:pointer}
+.gbtn svg{width:20px;height:20px}
+.orline{display:flex;align-items:center;gap:12px;color:#555;font-size:12px;text-transform:uppercase;margin:18px 0}
+.orline::before,.orline::after{content:'';flex:1;height:1px;background:var(--dark3)}
+.login input{width:100%;background:var(--dark);border:1px solid var(--dark3);border-radius:5px;padding:12px 14px;color:#fff;font-size:15px;margin-bottom:12px}
+.login input:focus{outline:none;border-color:var(--red)}
+.login .err{color:var(--red);font-size:13px;margin-top:14px;min-height:16px}
+.login .so{margin-top:14px;font-size:13px;cursor:pointer}
+
+/* APP */
+.wrap{padding:22px 0 60px;display:none}
+.card{background:var(--dark2);border:1px solid var(--dark3);border-radius:10px;padding:18px;margin-bottom:16px}
+.card h3{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.card h3 .material-symbols-outlined{font-size:20px;color:var(--red)}
+.card .hint{color:var(--gray);font-size:12px;margin-bottom:14px}
+.recip{max-height:280px;overflow:auto;border:1px solid var(--dark3);border-radius:8px}
+.rrow{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--dark3);font-size:14px}
+.rrow:last-child{border-bottom:none}
+.rrow input{width:17px;height:17px;accent-color:var(--red)}
+.rrow .nm{color:var(--white)}
+.rrow .ph{color:var(--lgray)}
+.rrow .ty{margin-left:auto;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--red);background:var(--rs);border:1px solid rgba(232,26,26,.3);padding:2px 8px;border-radius:4px}
+.rempty{padding:18px;color:var(--gray);font-size:13px;text-align:center}
+.selbar{display:flex;align-items:center;gap:14px;margin-bottom:10px;font-size:13px;color:var(--gray)}
+.selbar a{cursor:pointer}
+textarea,.msg{width:100%;background:var(--dark);border:1px solid var(--dark3);border-radius:8px;padding:12px 14px;color:#fff;font-family:'Barlow',sans-serif;font-size:14px;resize:vertical}
+textarea:focus{outline:none;border-color:var(--red)}
+.msgmeta{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:12px;color:var(--gray)}
+.chk{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--lgray);cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:var(--red)}
+.sendrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px}
+.count{font-family:'Oswald',sans-serif;font-size:15px;color:var(--white)}
+.count b{color:var(--red)}
+.results{margin-top:8px}
+.rsum{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.pill{font-family:'Oswald',sans-serif;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--dark3)}
+.pill.s{color:#5cd28b;border-color:#1f5a38}.pill.f{color:#ff9b9b;border-color:#5a2230}.pill.k{color:var(--gray)}
+.rline{font-size:13px;color:var(--lgray);padding:6px 0;border-bottom:1px solid var(--dark3);display:flex;justify-content:space-between;gap:10px}
+.rline .st.sent{color:#5cd28b}.rline .st.failed{color:#ff9b9b}.rline .st.skipped{color:var(--gray)}
+.warn{background:#3a2a10;border:1px solid #5a4318;color:#ffcf8f;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px}
+.logrow{font-size:12px;color:var(--gray);padding:8px 0;border-bottom:1px solid var(--dark3)}
+.logrow b{color:var(--lgray)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="login">
+  <div class="box">
+    <img src="logo.png" alt="The Crash Factory">
+    <h2>Text Blast</h2>
+    <p>Sign in with your Crash Factory account.</p>
+    <button class="gbtn" onclick="googleLogin()">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.3 5.3C41.4 35.6 44 30.3 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>
+      Continue with Google
+    </button>
+    <div class="orline">or</div>
+    <input id="liEmail" type="email" placeholder="Email" autocomplete="username">
+    <input id="liPass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')emailLogin()">
+    <button class="btn red" style="width:100%;justify-content:center" onclick="emailLogin()"><span class="material-symbols-outlined">login</span> Sign In</button>
+    <div class="err" id="err"></div>
+    <div class="so" id="signoutRow" style="display:none" onclick="signOut()">Sign out</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header><div class="ctn">
+  <div class="brand"><img src="logo.png" alt="The Crash Factory"><h1>Text <span class="red">Blast</span></h1></div>
+  <div class="htools">
+    <span class="whoami" id="whoami"><span id="uName"></span><span class="urole" id="uRole"></span></span>
+    <a class="btn" href="leads.html"><span class="material-symbols-outlined">inbox</span> Leads</a>
+    <button class="btn" id="hSignout" style="display:none" onclick="signOut()"><span class="material-symbols-outlined">logout</span> Sign Out</button>
+    <a class="btn" href="index.html"><span class="material-symbols-outlined">home</span> Site</a>
+  </div>
+</div></header>
+
+<div class="ctn">
+  <div class="wrap" id="wrap">
+
+    <div class="warn" id="cfgWarn" style="display:none"></div>
+
+    <div class="card">
+      <h3><span class="material-symbols-outlined">group</span> Recipients</h3>
+      <div class="hint">Pick from people who reached out, and/or paste extra numbers below.</div>
+      <div class="selbar"><a onclick="selectAll(true)">Select all</a><a onclick="selectAll(false)">Clear</a><span id="selCount">0 selected</span></div>
+      <div class="recip" id="recip"><div class="rempty">Loading contacts…</div></div>
+      <div style="margin-top:14px">
+        <div class="hint" style="margin-bottom:6px">Extra numbers (one per line or comma-separated)</div>
+        <textarea id="manual" rows="3" placeholder="214-555-0142, 469-555-7781" oninput="updateCount()"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="material-symbols-outlined">sms</span> Message</h3>
+      <textarea id="message" rows="5" placeholder="Hey, it's The Crash Factory — your vehicle is ready for pickup at 6211 S R L Thornton Fwy." oninput="updateCount()"></textarea>
+      <div class="msgmeta">
+        <label class="chk"><input type="checkbox" id="optOut" checked onchange="updateCount()"> Append "Reply STOP to opt out"</label>
+        <span id="charMeta">0 chars</span>
+      </div>
+    </div>
+
+    <div class="sendrow">
+      <button class="btn red" id="sendBtn" onclick="sendBlast()"><span class="material-symbols-outlined">send</span> Send Blast</button>
+      <span class="count">Sending to <b id="toCount">0</b></span>
+      <button class="btn" onclick="loadHistory()"><span class="material-symbols-outlined">history</span> Refresh History</button>
+    </div>
+
+    <div class="card results" id="resultsCard" style="display:none;margin-top:16px">
+      <h3><span class="material-symbols-outlined">fact_check</span> Results</h3>
+      <div class="rsum" id="rsum"></div>
+      <div id="rlines"></div>
+    </div>
+
+    <div class="card" id="histCard" style="display:none">
+      <h3><span class="material-symbols-outlined">history</span> Recent Blasts</h3>
+      <div id="hist"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+var BLAST_API = 'https://crash-factory-pay.vercel.app/api/blast';
+var LEAD_API = 'https://crash-factory-pay.vercel.app/api/lead';
+var CF = window.CF_CONFIG || {};
+var sb = null, CF_TOKEN = '', CF_EMAIL = '', LEADS = [];
+
+function loginErr(m){ document.getElementById('err').textContent = m || ''; }
+async function googleLogin(){ if(!sb) return loginErr('Login not configured.'); loginErr(''); await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } }); }
+async function emailLogin(){ if(!sb) return loginErr('Login not configured.'); loginErr(''); var r = await sb.auth.signInWithPassword({ email:document.getElementById('liEmail').value.trim(), password:document.getElementById('liPass').value }); if(r.error) loginErr(r.error.message); }
+async function signOut(){ if(sb) await sb.auth.signOut(); }
+
+async function onSession(session){
+  if(session && session.user){
+    CF_TOKEN = session.access_token || ''; CF_EMAIL = session.user.email || '';
+    var role = 'staff';
+    try{ var r = await sb.from('profiles').select('role').eq('id', session.user.id).single(); if(r.data && r.data.role) role = r.data.role; }catch(e){}
+    var hasAccess = (role === 'admin');
+    if(!hasAccess){ try{ var aa = await sb.from('app_access').select('enabled').eq('user_id', session.user.id).eq('app', CF.THIS_APP || 'crash').maybeSingle(); hasAccess = !!(aa.data && aa.data.enabled); }catch(e){} }
+    if(hasAccess){
+      document.getElementById('uName').textContent = (session.user.user_metadata && session.user.user_metadata.full_name) || CF_EMAIL;
+      document.getElementById('uRole').textContent = role;
+      document.getElementById('whoami').style.display = 'flex';
+      document.getElementById('hSignout').style.display = 'inline-flex';
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('wrap').style.display = 'block';
+      loadLeads(); loadHistory();
+    } else {
+      document.getElementById('login').style.display = 'flex';
+      document.getElementById('wrap').style.display = 'none';
+      loginErr('This account does not have Crash Factory access. Ask the owner, or sign out.');
+      document.getElementById('signoutRow').style.display = 'block';
+    }
+  } else {
+    CF_TOKEN=''; CF_EMAIL='';
+    document.getElementById('whoami').style.display='none';
+    document.getElementById('hSignout').style.display='none';
+    document.getElementById('login').style.display='flex';
+    document.getElementById('wrap').style.display='none';
+    document.getElementById('signoutRow').style.display='none';
+  }
+}
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+async function loadLeads(){
+  try{
+    var res = await fetch(LEAD_API, { headers:{ 'Authorization':'Bearer ' + CF_TOKEN }, cache:'no-store' });
+    var data = await res.json();
+    LEADS = (Array.isArray(data.leads) ? data.leads : []).filter(function(l){ return l.phone && String(l.phone).replace(/\D/g,'').length >= 10; });
+  }catch(e){ LEADS = []; }
+  renderRecip();
+}
+function renderRecip(){
+  var box = document.getElementById('recip');
+  if(!LEADS.length){ box.innerHTML = '<div class="rempty">No saved contacts with phone numbers yet. You can still paste numbers below.</div>'; updateCount(); return; }
+  box.innerHTML = LEADS.map(function(l, i){
+    return '<label class="rrow"><input type="checkbox" class="rchk" data-phone="' + esc(l.phone) + '" onchange="updateCount()">'
+      + '<span class="nm">' + esc(l.name || 'No name') + '</span><span class="ph">' + esc(l.phone) + '</span>'
+      + '<span class="ty">' + esc(l.type || 'lead') + '</span></label>';
+  }).join('');
+  updateCount();
+}
+function selectAll(on){ document.querySelectorAll('.rchk').forEach(function(c){ c.checked = on; }); updateCount(); }
+
+function gatherNumbers(){
+  var nums = [];
+  document.querySelectorAll('.rchk:checked').forEach(function(c){ nums.push(c.getAttribute('data-phone')); });
+  var manual = document.getElementById('manual').value.split(/[\n,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  return nums.concat(manual);
+}
+function updateCount(){
+  var n = gatherNumbers().length;
+  document.getElementById('toCount').textContent = n;
+  document.getElementById('selCount').textContent = document.querySelectorAll('.rchk:checked').length + ' selected';
+  var msg = document.getElementById('message').value;
+  var extra = document.getElementById('optOut').checked ? 26 : 0;
+  var len = msg.length + (extra ? extra : 0);
+  var segs = Math.max(1, Math.ceil(len / 153));
+  document.getElementById('charMeta').textContent = len + ' chars · ' + segs + ' segment' + (segs>1?'s':'');
+}
+
+async function sendBlast(){
+  var message = document.getElementById('message').value.trim();
+  var numbers = gatherNumbers();
+  if(!message){ alert('Type a message first.'); return; }
+  if(!numbers.length){ alert('Pick at least one recipient (or paste a number).'); return; }
+  if(!confirm('Send this text to ' + numbers.length + ' number' + (numbers.length>1?'s':'') + '?')) return;
+  var btn = document.getElementById('sendBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span> Sending…';
+  try{
+    var res = await fetch(BLAST_API, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + CF_TOKEN },
+      body: JSON.stringify({ message: message, numbers: numbers, appendOptOut: document.getElementById('optOut').checked, sentBy: CF_EMAIL })
+    });
+    var data = await res.json();
+    if(!res.ok){ throw new Error(data.error || ('HTTP ' + res.status)); }
+    showResults(data);
+    loadHistory();
+  }catch(e){ alert('Could not send: ' + e.message); }
+  btn.disabled = false; btn.innerHTML = '<span class="material-symbols-outlined">send</span> Send Blast';
+}
+function showResults(data){
+  document.getElementById('resultsCard').style.display = 'block';
+  document.getElementById('rsum').innerHTML =
+    '<span class="pill s">' + (data.sent||0) + ' sent</span>'
+    + '<span class="pill f">' + (data.failed||0) + ' failed</span>'
+    + '<span class="pill k">' + (data.skipped||0) + ' skipped</span>';
+  document.getElementById('rlines').innerHTML = (data.results||[]).map(function(r){
+    return '<div class="rline"><span>' + esc(r.to) + '</span><span class="st ' + esc(r.status) + '">' + esc(r.status) + (r.error?(' — ' + esc(r.error)):'') + '</span></div>';
+  }).join('');
+}
+
+async function loadHistory(){
+  try{
+    var res = await fetch(BLAST_API, { headers:{ 'Authorization':'Bearer ' + CF_TOKEN }, cache:'no-store' });
+    if(!res.ok) return;
+    var data = await res.json();
+    var log = data.log || [];
+    var card = document.getElementById('histCard');
+    if(!log.length){ card.style.display='none'; return; }
+    card.style.display = 'block';
+    document.getElementById('hist').innerHTML = log.map(function(e){
+      var when=''; try{ when = new Date(e.at).toLocaleString('en-US',{timeZone:'America/Chicago'}); }catch(x){ when=e.at; }
+      return '<div class="logrow"><b>' + esc(when) + '</b> · ' + (e.sent||0) + ' sent, ' + (e.failed||0) + ' failed, ' + (e.skipped||0) + ' skipped<br>' + esc((e.message||'').slice(0,140)) + '</div>';
+    }).join('');
+  }catch(e){}
+}
+
+// init
+(function(){
+  if(CF.SUPABASE_URL && CF.SUPABASE_ANON_KEY && window.supabase){
+    sb = window.supabase.createClient(CF.SUPABASE_URL, CF.SUPABASE_ANON_KEY);
+    sb.auth.getSession().then(function(r){ onSession(r.data.session); }).catch(function(){ onSession(null); });
+    sb.auth.onAuthStateChange(function(_e, s){ onSession(s); });
+  } else { loginErr('Login library failed to load.'); }
+})();
+</script>
+</body>
+</html>
