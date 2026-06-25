@@ -194,9 +194,10 @@ async function onSession(session){
       if(r.data && r.data.role) role = r.data.role;
     }catch(e){ /* profile may not exist yet -> staff */ }
 
-    // Access model (same as Blast): admins reach everything; otherwise the person
-    // needs an enabled app_access row for this site ('crash').
-    var hasAccess = (role === 'admin');
+    // Access model (same as Blast): the owner ALWAYS gets in (can't lock self out);
+    // admins reach everything; otherwise the person needs an enabled app_access
+    // row for this site ('crash').
+    var hasAccess = (role === 'admin') || rbIsOwner(CF_EMAIL);
     if(!hasAccess){
       try{
         var aa = await sb.from('app_access').select('enabled').eq('user_id', session.user.id).eq('app', CF.THIS_APP || 'crash').maybeSingle();
@@ -286,13 +287,14 @@ function renderRolesBoard(err){
   if(!rbRows.length && !err){ h += '<div class="rbempty">No one has signed in yet. People appear here after their first Google sign-in.</div>'; }
   rbRows.forEach(function(p){
     var isAdmin = p.role === 'admin';
+    var ownerRow = rbIsOwner(p.email); // can't change the owner's own role (no self-lockout)
     h += '<div class="rbcard"><div class="rbtop"><div class="rbwho"><div class="rbav">' + esc(rbInitials(p.full_name, p.email)) + '</div>'
-      + '<div><div class="rbname">' + esc(p.full_name || p.email) + '</div><div class="rbemail">' + esc(p.email || '') + '</div></div></div>'
+      + '<div><div class="rbname">' + esc(p.full_name || p.email) + (ownerRow ? ' <span style="font-size:10px;color:#7d8db0">(owner)</span>' : '') + '</div><div class="rbemail">' + esc(p.email || '') + '</div></div></div>'
       + '<div class="rbroles">';
     ROLES.forEach(function(rl){
       var on = p.role === rl;
-      var dis = (rbBusy === p.id + ':role') ? ' disabled' : '';
-      h += '<button class="rbrole' + (on ? ' on' : '') + '"' + dis + ' onclick="' + (on ? '' : "rbSetRole('" + p.id + "','" + rl + "')") + '">' + rl + '</button>';
+      var dis = (ownerRow || rbBusy === p.id + ':role') ? ' disabled' : '';
+      h += '<button class="rbrole' + (on ? ' on' : '') + '"' + dis + ' onclick="' + ((on || ownerRow) ? '' : "rbSetRole('" + p.id + "','" + rl + "')") + '">' + rl + '</button>';
     });
     h += '</div></div><div class="rbacclbl">Access</div><div class="rbapps">';
     APPS.forEach(function(app){

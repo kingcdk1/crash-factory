@@ -176,7 +176,9 @@ async function onSession(session){
     CF_TOKEN = session.access_token || ''; CF_EMAIL = session.user.email || '';
     var role = 'staff';
     try{ var r = await sb.from('profiles').select('role').eq('id', session.user.id).single(); if(r.data && r.data.role) role = r.data.role; }catch(e){}
-    var hasAccess = (role === 'admin');
+    var em = (session.user.email || '').toLowerCase();
+    var isOwner = (CF.OWNER_EMAILS || []).some(function(o){ return String(o).toLowerCase() === em; });
+    var hasAccess = (role === 'admin') || isOwner;
     if(!hasAccess){ try{ var aa = await sb.from('app_access').select('enabled').eq('user_id', session.user.id).eq('app', CF.THIS_APP || 'crash').maybeSingle(); hasAccess = !!(aa.data && aa.data.enabled); }catch(e){} }
     if(hasAccess){
       document.getElementById('uName').textContent = (session.user.user_metadata && session.user.user_metadata.full_name) || CF_EMAIL;

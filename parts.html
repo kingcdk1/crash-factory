@@ -825,9 +825,11 @@ async function onPartsSession(session){
     CF_TOKEN = session.access_token || '';
     var role='staff';
     try{ var r=await cfSb.from('profiles').select('role').eq('id',session.user.id).single(); if(r.data&&r.data.role) role=r.data.role; }catch(e){}
-    // Same access model as Blast: admins reach everything; otherwise need an
-    // enabled app_access row for this site ('crash').
-    var hasAccess = (role==='admin');
+    // Owner ALWAYS gets in (can't lock self out); admins reach everything;
+    // otherwise need an enabled app_access row for this site ('crash').
+    var em=(session.user.email||'').toLowerCase();
+    var isOwner=(CF.OWNER_EMAILS||[]).some(function(o){return String(o).toLowerCase()===em;});
+    var hasAccess = (role==='admin') || isOwner;
     if(!hasAccess){
       try{ var aa=await cfSb.from('app_access').select('enabled').eq('user_id',session.user.id).eq('app',(CF.THIS_APP||'crash')).maybeSingle(); hasAccess=!!(aa.data&&aa.data.enabled); }catch(e){ hasAccess=false; }
     }
