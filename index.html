@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* If a Supabase Google login lands back on the front page (the project's Site URL),
+   forward the auth response straight to the Staff Login page so the dashboard opens. */
+(function(){
+  var h = window.location.hash || '', q = window.location.search || '';
+  if (h.indexOf('access_token=') !== -1 || h.indexOf('error=') !== -1 ||
+      q.indexOf('code=') !== -1 || q.indexOf('error=') !== -1) {
+    window.location.replace('leads.html' + q + h);
+  }
+})();
+</script>
 <title>The Crash Factory | Dallas Auto Collision Repair & Body Shop | 24/7 Service</title>
 <meta name="description" content="The Crash Factory — Dallas's 24/7 auto collision repair and body shop. All insurance welcome. Expert paint, dent repair, frame straightening, and full restoration. 6211 S R L Thornton Fwy, Dallas TX 75232. Call 214-509-6194.">
 <meta name="keywords" content="auto body shop Dallas, collision repair Dallas, car paint shop Dallas TX, dent repair Dallas, frame straightening, auto restoration, body work near me, Dallas body shop, South Dallas auto repair, RL Thornton body shop, insurance claim repair Dallas, hail damage repair Dallas, auto paint Dallas, PDR Dallas, paintless dent repair Dallas TX, car body work Dallas, fender repair Dallas, bumper repair Dallas TX, custom paint job Dallas, vehicle restoration Dallas, 24/7 body shop Dallas, heavy equipment paint Dallas, classic car restoration Dallas">
@@ -230,7 +241,7 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
 
 <!-- HEADER -->
 <header><div class="ctn">
-  <a href="#"><img src="logo.png" alt="The Crash Factory - Dallas Auto Body Shop" class="logo-img"></a>
+  <a href="#"><img src="logo-dark.png" alt="The Crash Factory - Dallas Auto Body Shop" class="logo-img"></a>
   <button class="mt" onclick="document.querySelector('nav').classList.toggle('open')" aria-label="Menu"><span class="material-symbols-outlined">menu</span></button>
   <nav>
     <a href="#services">Services</a>
@@ -430,7 +441,7 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
 <!-- FOOTER -->
 <footer><div class="ctn">
   <div class="fgrid">
-    <div class="fb"><img src="logo.png" alt="The Crash Factory" class="flogo"><p>Dallas's trusted auto body shop. Expert collision repair, paint, classic restoration, and heavy equipment bodywork. 24/7 service. All insurance welcome.</p></div>
+    <div class="fb"><img src="logo-dark.png" alt="The Crash Factory" class="flogo"><p>Dallas's trusted auto body shop. Expert collision repair, paint, classic restoration, and heavy equipment bodywork. 24/7 service. All insurance welcome.</p></div>
     <div class="fc"><h4>Services</h4><a href="#services">Collision Repair</a><a href="#services">Auto Paint</a><a href="#services">Frame Straightening</a><a href="#services">Dent Removal / PDR</a><a href="#services">Classic Restoration</a><a href="#services">Heavy Equipment</a><a href="#services">Insurance Claims</a></div>
     <div class="fc"><h4>Quick Links</h4><a href="#gallery">Before &amp; After</a><a href="parts.html">Parts for Sale</a><a href="#about">About Us</a><a href="#contact">Contact</a><a href="#contact">Free Estimate</a><a href="towzero.html">TowZero (We Pay Your Tow)</a><a href="links.html">All Our Links</a><a href="https://www.facebook.com/thecrashfactory" target="_blank">Facebook</a><a href="https://www.instagram.com/thecrashfactory" target="_blank">Instagram</a><a href="https://www.tiktok.com/@thecrashfactory" target="_blank">TikTok</a></div>
     <div class="fc"><h4>Contact</h4><a href="tel:+12145096194">214-509-6194</a><a href="mailto:admin@thecrashfactory.com">admin@thecrashfactory.com</a><a href="mailto:service@mycrashpro.com">service@mycrashpro.com</a><a href="https://maps.google.com/?q=6211+S+R+L+Thornton+Fwy+Dallas+TX+75232" target="_blank">6211 S R L Thornton Fwy<br>Dallas, TX 75232</a></div>
