@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Referral Link & QR | The Crash Factory</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--black:#0a0a0a;--dark:#111;--dark2:#161616;--dark3:#222;--gray:#999;--lgray:#ccc;--white:#f0f0f0;--red:#e81a1a;--redd:#c41414;--rg:rgba(232,26,26,.25);--rs:rgba(232,26,26,.08)}
+body{font-family:'Barlow',sans-serif;background:var(--black);color:var(--white);min-height:100vh;line-height:1.55;
+  background-image:radial-gradient(circle at 50% 0,rgba(232,26,26,.10),transparent 60%)}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.wrap{max-width:520px;margin:0 auto;padding:30px 22px 60px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--gray);text-decoration:none;font-size:13px;margin-bottom:18px}
+.back:hover{color:var(--red)}
+.logo{height:54px;display:block;margin-bottom:16px}
+h1{font-family:'Oswald',sans-serif;font-size:28px;text-transform:uppercase;letter-spacing:1px}
+h1 .red{color:var(--red)}
+.lead{color:var(--gray);font-size:14px;margin:8px 0 24px}
+.card{background:var(--dark2);border:1px solid var(--dark3);border-radius:12px;padding:22px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;letter-spacing:.5px;color:var(--gray);text-transform:uppercase;margin-bottom:6px}
+.field input{width:100%;background:var(--dark);border:1px solid var(--dark3);border-radius:8px;padding:13px 14px;color:var(--white);font-family:'Barlow',sans-serif;font-size:15px}
+.field input:focus{outline:none;border-color:var(--red)}
+.linkbox{display:flex;gap:8px}
+.linkbox input{flex:1;font-size:13px;color:var(--red)}
+.copy-btn{flex-shrink:0;background:var(--rs);border:1px solid rgba(232,26,26,.4);color:var(--red);border-radius:8px;padding:0 16px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.copy-btn:hover{background:var(--red);color:#fff}
+.qrwrap{text-align:center;margin-top:8px}
+#qr{display:inline-block;background:#fff;padding:14px;border-radius:10px;min-height:60px}
+#qr img,#qr canvas{display:block}
+.dl{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;background:var(--red);color:#fff;border:none;border-radius:8px;
+  padding:13px 22px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;width:100%}
+.dl:hover{background:var(--redd)}
+.hint{color:var(--gray);font-size:12px;margin-top:14px;text-align:center}
+footer{text-align:center;color:#555;font-size:12px;margin-top:26px}
+footer a{color:var(--red);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html"><span class="material-symbols-outlined" style="font-size:18px">arrow_back</span> Back to site</a>
+  <img src="logo-dark.png" alt="The Crash Factory" class="logo">
+  <h1>Referral Link &amp; <span class="red">QR Code</span></h1>
+  <p class="lead">Type a referrer's name to make their personal link and QR code. Anyone who comes in through it gets tagged to them in your leads.</p>
+
+  <div class="card">
+    <div class="field">
+      <label for="refName">Referrer's name</label>
+      <input type="text" id="refName" placeholder="e.g. Jose at Tint Shop" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="baseUrl">Link points to</label>
+      <input type="text" id="baseUrl" value="https://thecrashfactory.com/">
+    </div>
+    <div class="field">
+      <label for="refLink">Their referral link</label>
+      <div class="linkbox">
+        <input type="text" id="refLink" readonly>
+        <button class="copy-btn" id="copyBtn" type="button">Copy</button>
+      </div>
+    </div>
+    <div class="qrwrap">
+      <div id="qr"></div>
+      <button class="dl" id="dlBtn" type="button"><span class="material-symbols-outlined">download</span> Download QR Code</button>
+      <p class="hint">Print it, text it, or stick it on a flyer. Works on any phone camera.</p>
+    </div>
+  </div>
+
+  <footer>&copy; 2026 The Crash Factory &middot; <a href="index.html">thecrashfactory.com</a></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<script>
+(function(){
+  var nameEl=document.getElementById('refName'), baseEl=document.getElementById('baseUrl'),
+      linkEl=document.getElementById('refLink'), box=document.getElementById('qr');
+  var qr=null, lastSlug='';
+  function slug(s){ return (s||'qr').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  function build(){
+    var name=nameEl.value.trim(), base=baseEl.value.trim()||'https://thecrashfactory.com/';
+    var link = name ? base + (base.indexOf('?')>-1?'&':'?') + 'ref=' + encodeURIComponent(name) : base;
+    linkEl.value = link; lastSlug = slug(name);
+    box.innerHTML='';
+    if(typeof QRCode!=='undefined'){
+      qr=new QRCode(box,{text:link,width:220,height:220,colorDark:'#0a0a0a',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+    }
+  }
+  function download(){
+    var img=box.querySelector('img')||box.querySelector('canvas'); if(!img) return;
+    var data = img.tagName==='IMG' ? img.src : img.toDataURL('image/png');
+    var a=document.createElement('a'); a.href=data; a.download='CrashFactory-referral-'+(lastSlug||'qr')+'.png'; a.click();
+  }
+  nameEl.addEventListener('input',build);
+  baseEl.addEventListener('input',build);
+  document.getElementById('copyBtn').addEventListener('click',function(){
+    linkEl.select(); try{document.execCommand('copy');}catch(e){}
+    var b=document.getElementById('copyBtn'), t=b.textContent; b.textContent='Copied'; setTimeout(function(){b.textContent=t;},1500);
+  });
+  document.getElementById('dlBtn').addEventListener('click',download);
+  build();
+})();
+</script>
+</body>
+</html>

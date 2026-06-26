@@ -319,7 +319,7 @@ async function submitDriver(e){
         name:name,
         phone:phone,
         message:'Tow driver wants to get set up to drop cars at The Crash Factory.',
-        fields:{ 'Trucks they run': trucks || 'not given' }
+        fields:(function(){ var f={ 'Trucks they run': trucks || 'not given' }; var r=(window.cfRef?window.cfRef():''); if(r) f['Referred by']=r; return f; })()
       })
     });
     var data = await res.json();
@@ -347,5 +347,6 @@ function showDriverThanks(name){
     +'</div>';
 }
 </script>
+<script src="ref-capture.js"></script>
 </body>
 </html>
