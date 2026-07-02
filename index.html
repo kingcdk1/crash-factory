@@ -377,7 +377,7 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
   </div>
   <div class="cf">
     <h3>Get Your Free Estimate</h3>
-    <form action="mailto:admin@thecrashfactory.com" method="POST" enctype="text/plain">
+    <form id="estimateForm" onsubmit="return submitEstimate(event)">
       <input type="hidden" name="referred_by" id="cfContactRef">
       <div class="fr"><div class="fg"><label>First Name</label><input type="text" name="first_name" placeholder="First name" required></div><div class="fg"><label>Last Name</label><input type="text" name="last_name" placeholder="Last name" required></div></div>
       <div class="fr"><div class="fg"><label>Phone</label><input type="tel" name="phone" placeholder="(214) 555-0000" required></div><div class="fg"><label>Email</label><input type="email" name="email" placeholder="you@email.com"></div></div>
@@ -450,6 +450,41 @@ footer{background:var(--black);border-top:1px solid var(--dark3);padding:48px 0 
   <div class="fbot"><p>&copy; 2026 The Crash Factory. All rights reserved.</p><p><a href="leads.html"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px">lock</span> Staff Login</a> &nbsp;&middot;&nbsp; <a href="https://www.thecrashfactory.com">thecrashfactory.com</a></p></div>
 </div></footer>
 
+<script>
+// Customer "get my car fixed" application -> lead pipeline (stored + emailed + shown in dashboard).
+async function submitEstimate(e){
+  e.preventDefault();
+  var f = e.target;
+  var fn = f.first_name.value.trim(), ln = f.last_name.value.trim();
+  var phone = f.phone.value.trim(), email = f.email.value.trim();
+  var vehicle = f.vehicle.value.trim(), service = f.service.value, msg = f.message.value.trim();
+  if(!fn || !phone){ alert('Please add your name and phone.'); return false; }
+  var btn = f.querySelector('.fsub'); var restore = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled = true; btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span> Sending...'; }
+  var ref = (window.cfRef ? window.cfRef() : '');
+  var fields = {};
+  if(vehicle) fields['Vehicle'] = vehicle;
+  if(service) fields['Service'] = service;
+  if(ref) fields['Referred by'] = ref;
+  try{
+    var res = await fetch('https://crash-factory-pay.vercel.app/api/lead', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ type:'estimate', name:(fn+' '+ln).trim(), phone:phone, email:email, message:msg, fields:fields })
+    });
+    var data = await res.json();
+    if(res.ok && data.success && (data.stored || data.emailed)){
+      f.innerHTML = '<div style="text-align:center;padding:20px 0"><span class="material-symbols-outlined icon-filled" style="font-size:52px;color:var(--red)">check_circle</span><h3 style="margin:12px 0 6px">Got it — we\'ll be in touch</h3><p style="color:var(--gray)">Your free estimate request came through. We\'ll reach out shortly. Need us now? Call or text 214-509-6194.</p></div>';
+      return false;
+    }
+    throw new Error(data.error||'not captured');
+  }catch(err){
+    var body = 'NEW ESTIMATE REQUEST\n\nName: '+fn+' '+ln+'\nPhone: '+phone+'\nEmail: '+email+'\nVehicle: '+vehicle+'\nService: '+service+(ref?('\nReferred by: '+ref):'')+'\n\n'+msg;
+    window.location.href = 'mailto:admin@thecrashfactory.com?subject='+encodeURIComponent('Free Estimate Request - '+fn+' '+ln)+'&body='+encodeURIComponent(body);
+    if(btn){ btn.disabled=false; btn.innerHTML=restore; }
+    return false;
+  }
+}
+</script>
 <script src="ref-capture.js"></script>
 </body>
 </html>
